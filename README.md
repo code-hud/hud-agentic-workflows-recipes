@@ -22,7 +22,7 @@ Three layers:
 
 If you're starting from scratch with a custom task, start in [`templates/`](templates/) instead.
 
-## Examples (v0)
+## Examples
 
 | Use case | Platform | What it does |
 |---|---|---|
@@ -31,7 +31,7 @@ If you're starting from scratch with a custom task, start in [`templates/`](temp
 | [Dead-code cleanup](examples/dead-code-cleanup/) | Cursor (Cloud Agent) | Finds zero-traffic functions and opens a cleanup PR. |
 | [Rollback check](examples/rollback-check/) | Claude routine (skill or scheduled remote) | Compares current vs. previous release health to recommend go / no-go on rollback. |
 
-## Templates (v0)
+## Templates
 
 | Platform | Path | Best for |
 |---|---|---|
@@ -40,7 +40,7 @@ If you're starting from scratch with a custom task, start in [`templates/`](temp
 | Cursor | [`templates/cursor/`](templates/cursor/) | Cursor Cloud Agents (configured via dashboard, prompt pasted in) |
 | Claude routine | [`templates/claude-routine/`](templates/claude-routine/) | On-demand skills or scheduled remote agents |
 
-## Recipes (v0)
+## Recipes
 
 | Pattern | Path |
 |---|---|
