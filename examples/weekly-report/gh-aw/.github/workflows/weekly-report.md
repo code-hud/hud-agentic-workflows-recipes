@@ -42,9 +42,9 @@ strict: false
 timeout-minutes: 90
 
 permissions:
-  id-token: write
   contents: read
   pull-requests: read
+  # id-token: write    # add ONLY for AWS Bedrock (AWS OIDC, not Hud)
 
 network:
   allowed:
@@ -55,7 +55,6 @@ network:
     - "cdn.hud.io"
     - "api.slack.com"
     - "slack.com"
-    - "*.lambda-url.eu-central-1.on.aws"
 
 tools:
   edit:

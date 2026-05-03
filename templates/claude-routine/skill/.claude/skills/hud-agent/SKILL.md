@@ -30,7 +30,7 @@ claude mcp add --transport stdio --scope user hud npx -y hud-mcp@v2 -- -e HUD_MC
 > - "List the top 10 functions by error rate in the last 24 hours. For each, fetch a sample forensic and propose a fix."
 > - "Audit the repo for dead code — query Hud for functions with zero invocations, run safety checks, propose deletions."
 >
-> Reference the [examples/](../../../../examples/) folder for working patterns.
+> Reference the [examples/](../../../../../../examples/) folder for working patterns.
 
 ## Output
 

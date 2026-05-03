@@ -68,6 +68,6 @@ If `additional_context` is provided, factor it in.
 > - "Summarize the top 5 endpoints by error rate over the last 7 days and post to Slack."
 > - "Compare the current deployment's health to the previous version and recommend rollback / investigate / clean."
 >
-> Reference the [examples/](../../../examples/) folder for working patterns.
+> Reference the [examples/](../../../../examples/) folder for working patterns.
 
 When you finish, print a short summary of what you did and any next steps.
