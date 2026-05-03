@@ -14,12 +14,6 @@ Three layers:
 | [`examples/`](examples/) | Real, working use cases | You have a specific use case (blast radius, weekly report, dead code, rollback) |
 | [`recipes/`](recipes/) | Cross-cutting patterns (e.g. team-splitting) that plug into any example | Adapting an example to your team/service shape |
 
-## Who is this for
-
-- **IC developers** — browsing for ideas, want to drop something useful into their team's repo this week.
-- **Platform / SRE teams** — looking to wire production insights into existing review and deployment flows.
-- **EMs** — evaluating what production-data automations could look like for their team.
-
 ## Quick start
 
 1. Pick an example from [`examples/`](examples/) that matches a pain you're feeling.
