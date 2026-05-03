@@ -1,0 +1,39 @@
+name: Hud Blast Radius
+
+on:
+  pull_request_target:
+    branches: [main]
+    # paths: ['apps/**', 'src/**']    # uncomment to scope by path
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to analyze (manual runs)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  # id-token: write    # add ONLY for AWS Bedrock (AWS OIDC, not Hud)
+
+jobs:
+  blast-radius:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # If using Bedrock, uncomment:
+      # - uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      #     aws-region: us-west-2
+
+      - uses: ./.github/actions/blast-radius
+        with:
+          hud-mcp-key: ${{ secrets.HUD_MCP_KEY }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # lookback-days: '7'
+          # max-functions: '80'
+          # comment-on-pr: 'true'
