@@ -1,0 +1,39 @@
+# Example teams-to-services mapping.
+# Drop this in your repo (e.g. .github/teams.yaml) and load it from your workflow.
+#
+# Keys are normalized team names (lowercase, dashes). Each entry can include:
+#   - display_name: human-readable team name (used in reports)
+#   - slack_channel: where to route notifications (optional)
+#   - services: list of service names this team owns
+#   - members: list of GitHub usernames (optional, used for actor-gating)
+
+platform:
+  display_name: Platform
+  slack_channel: platform-daily-prod
+  services:
+    - api-gateway
+    - auth-service
+    - rate-limiter
+  members:
+    - alice
+    - bob
+
+billing:
+  display_name: Billing
+  slack_channel: billing-daily-prod
+  services:
+    - invoice-service
+    - subscriptions-service
+    - payments-worker
+  members:
+    - carol
+    - dave
+
+discovery:
+  display_name: Discovery
+  slack_channel: discovery-daily-prod
+  services:
+    - search-api
+    - recommendations-worker
+  members:
+    - eve

@@ -1,0 +1,67 @@
+# GitHub Actions job snippet — gate downstream jobs on team membership.
+#
+# Usage:
+#   1. Drop this `check-membership` job into your workflow.
+#   2. Set the TEAM_SLUG env to the team you want to gate on (e.g. "platform").
+#   3. Add the gate to your downstream job:
+#        my-job:
+#          needs: check-membership
+#          if: needs.check-membership.outputs.is-authorized == 'true'
+#
+# Required secret: TEAM_READ_TOKEN — a PAT (or GitHub App token) with `read:org` scope.
+# Workflow_dispatch always bypasses the check (assumes a maintainer is triggering).
+
+jobs:
+  check-membership:
+    runs-on: ubuntu-latest
+    outputs:
+      is-authorized: ${{ steps.check.outputs.is-authorized }}
+    steps:
+      - name: Check team membership
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.TEAM_READ_TOKEN }}
+          ORG: ${{ github.repository_owner }}
+          TEAM_SLUG: platform   # ← change to your team's slug
+          ACTOR: ${{ github.event.pull_request.user.login }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Manual dispatch: always allow (a maintainer is triggering it).
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "workflow_dispatch — bypassing team check"
+            echo "is-authorized=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -z "${ACTOR}" ]; then
+            echo "No PR actor resolved — denying"
+            echo "is-authorized=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "❌ TEAM_READ_TOKEN secret is not set. Cannot check team membership."
+            echo "   Create a PAT with 'read:org' scope (or a GitHub App token) and"
+            echo "   add it as a repository secret named TEAM_READ_TOKEN."
+            echo "is-authorized=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # GET /orgs/{org}/teams/{team_slug}/memberships/{username}
+          # Returns 200 with {state: "active"|"pending"} if member, 404 otherwise.
+          STATE=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/orgs/${ORG}/teams/${TEAM_SLUG}/memberships/${ACTOR}" \
+            --jq '.state' 2>/dev/null || echo "")
+
+          if [ "${STATE}" = "active" ]; then
+            echo "✅ ${ACTOR} is an active member of ${ORG}/${TEAM_SLUG}"
+            echo "is-authorized=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "⛔ ${ACTOR} is NOT an active member of ${ORG}/${TEAM_SLUG} (state='${STATE:-none}')"
+            echo "is-authorized=false" >> "$GITHUB_OUTPUT"
+          fi
