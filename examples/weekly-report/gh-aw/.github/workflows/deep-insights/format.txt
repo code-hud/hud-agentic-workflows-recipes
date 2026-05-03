@@ -50,7 +50,7 @@ For EACH insight, include ALL of these blocks (3 blocks per insight):
        - Button 2: "Open Jira Ticket"
          - type: "button"
          - text: "Open Jira Ticket"
-         - url: `https://YOUR_JIRA_INSTANCE.atlassian.net/secure/CreateIssueDetails!init.jspa?pid=YOUR_PROJECT_ID&issuetype=10369&priority=3&summary={ENCODED_SUMMARY}&description={ENCODED_DESCRIPTION}&labels=Hud`
+         - url: `https://org-name.atlassian.net/secure/CreateIssueDetails!init.jspa?pid=ORG&issuetype=10369&priority=3&summary={ENCODED_SUMMARY}&description={ENCODED_DESCRIPTION}&labels=Hud`
          - style: "primary"
          - ENCODED_SUMMARY: URL-encoded title (e.g., "Fix {Insight Category} in {Service}")
          - ENCODED_DESCRIPTION: URL-encoded Jira description using this format:
@@ -91,7 +91,7 @@ CONSTRAINTS:
 - The "Details" section MUST be long enough to trigger Slack's "Show more" collapse (usually > 5 lines). Ensure it contains newlines.
 - TIME FORMAT: Use human-readable time (e.g., "150ms", "2.5s", "5m"). Never raw large ms values.
 - Make HUD links clickable using Slack format: <url|display text>
-- IMPORTANT: Ensure all HUD app URLs use the `app.hud.io` domain (e.g., `https://www.app.hud.io/explore/...`).
+- IMPORTANT: Ensure all HUD app URLs use the `app.hud.io` domain (e.g., `https://app.hud.io/explore/...`).
 - CURSOR DEEP LINK: In the Action block, create a button with url `https://cursor.com/link/prompt?text=...`. The text param must be a URL-encoded prompt: "Apply this fix to {file}:\n\n{suggestion}".
 
 JSON TEMPLATE:

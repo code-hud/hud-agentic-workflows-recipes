@@ -48,7 +48,9 @@ If you're starting from scratch with a custom task, start in [`templates/`](temp
 
 ## Auth
 
-All examples use a single `HUD_MCP_KEY` secret to authenticate the Hud MCP server (`npx -y hud-mcp@v2`). For Bedrock-routed customers, see [`docs/auth.md`](docs/auth.md).
+All examples use a single `HUD_MCP_KEY` secret to authenticate the Hud MCP server (`npx -y hud-mcp@v2`). New to Hud? Start at [hud.io](https://hud.io); the dashboard's Settings → MCP keys page is where you mint the key.
+
+For Bedrock-routed customers, see [`docs/auth.md`](docs/auth.md). For the consolidated list of every secret each example needs, see [`docs/secrets.md`](docs/secrets.md).
 
 ## Contributing
 

@@ -78,8 +78,8 @@
     Write the final findings to /tmp/analysis_findings.md using the Output Spec.
     
     LINK FORMATS (include these in your findings):
-    - Endpoint: https://www.app.hud.io/explore/endpoints/{endpoint_id}-{service_id}?environment=production
-    - Function: https://www.app.hud.io/explore/functions/{function_id}?environment=production
+    - Endpoint: https://app.hud.io/explore/endpoints/{endpoint_id}-{service_id}?environment=production
+    - Function: https://app.hud.io/explore/functions/{function_id}?environment=production
   </WORKFLOW>
 
   <OUTPUT_SPEC>
@@ -107,7 +107,7 @@
 
     ### Functions Involved
     (Query ONLY data from the relevant flow)
-    - [function_signature](https://www.app.hud.io/explore/functions/{function_id}?environment=production) — [metric]
+    - [function_signature](https://app.hud.io/explore/functions/{function_id}?environment=production) — [metric]
     - ...
 
     ### Code Location & Root Cause

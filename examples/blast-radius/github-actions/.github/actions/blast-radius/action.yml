@@ -66,6 +66,11 @@ inputs:
     description: 'Hud MCP key (from Hud dashboard, stored as a repo secret)'
     required: true
 
+  model:
+    description: 'Model alias for the Claude CLI (sonnet, opus, haiku, or full Bedrock model ID)'
+    required: false
+    default: 'opus'
+
   workspace-name:
     description: 'Hud workspace name key (usually owner/repo)'
     required: false
@@ -214,7 +219,7 @@ runs:
       run: |
         set -euo pipefail
 
-        PROMPT_PATH="${GITHUB_ACTION_PATH}/../../workflows/blast-radius-prompt.txt"
+        PROMPT_PATH="${GITHUB_ACTION_PATH}/blast-radius-prompt.txt"
         if [ ! -f "${PROMPT_PATH}" ]; then
           echo "❌ Prompt not found at ${PROMPT_PATH}"
           exit 1
@@ -274,7 +279,7 @@ runs:
         # Allow claude CLI to fail (e.g. API overloaded) without aborting the step.
         CLAUDE_EXIT=0
         cat "${PROMPT_PATH}" /tmp/blast-radius-input.md | claude \
-          --model "opus" \
+          --model "${{ inputs.model }}" \
           --mcp-config "${{ steps.hud-config.outputs.mcp-config-path }}" \
           2>&1 | tee "${REPORT_PATH}" || CLAUDE_EXIT=$?
 

@@ -16,7 +16,7 @@ A blank skeleton for a Claude Code skill that uses the Hud MCP for production ru
 The user's local Claude Code config must have the Hud MCP registered with `HUD_MCP_KEY`. If not, they can add it via:
 
 ```bash
-claude mcp add --transport stdio --scope user hud npx -y hud-mcp@v2 -- -e HUD_MCP_KEY=$HUD_MCP_KEY
+claude mcp add -e HUD_MCP_KEY=$HUD_MCP_KEY --scope user --transport stdio hud -- npx -y hud-mcp@v2
 ```
 
 (Or by editing `~/.claude.json` directly.)

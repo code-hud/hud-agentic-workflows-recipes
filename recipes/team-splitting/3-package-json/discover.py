@@ -136,14 +136,22 @@ def main() -> int:
         default="/tmp/team_services.json",
         help="Output JSON path (default: /tmp/team_services.json)",
     )
+    p.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit non-zero if no teams are discovered (default: warn and exit 0 so the calling workflow can still run).",
+    )
     args = p.parse_args()
 
     roots = args.root or ["apps"]
     teams = discover(roots, args.out)
 
     if not teams:
-        print("ERROR: No teams discovered. Aborting.", file=sys.stderr)
-        return 1
+        msg = "No teams discovered."
+        if args.strict:
+            print(f"ERROR: {msg} Aborting.", file=sys.stderr)
+            return 1
+        print(f"WARNING: {msg} Wrote empty result to {args.out}.", file=sys.stderr)
     return 0
 
 

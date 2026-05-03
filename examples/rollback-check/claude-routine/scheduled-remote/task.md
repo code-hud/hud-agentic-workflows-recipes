@@ -4,6 +4,8 @@ This file is the prompt for a [Claude scheduled remote agent](https://docs.claud
 
 ## How to register
 
+The `scheduled-tasks` MCP is currently an Anthropic-managed server — check the Claude Code docs for the canonical install path; if it's not enabled in your environment, the on-demand [skill variant](../skill/) is the working alternative.
+
 Use the `mcp__scheduled-tasks__create_scheduled_task` tool to register this prompt as a scheduled task. Example invocation (from Claude Code):
 
 ```

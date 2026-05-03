@@ -41,12 +41,13 @@ Before pasting the prompt into Cursor, search-and-replace:
 | `dimensions/org-name` | Your service-inventory path |
 | `org-name.atlassian.net` | Your Jira host |
 | `ORG` (Jira project key) | Your Jira project key |
+| `BASE_BRANCH: master` | Your default branch (commonly `main`) |
 
 Also confirm the fixed-value inputs at the top of the agent prompt match your conventions:
 
 - `JIRA_PROJECT_KEY`
 - `LOOKBACK_DAYS` (default: 60)
-- `BASE_BRANCH` (default: master)
+- `BASE_BRANCH` (default: `master` — change to `main` for most repos)
 - `MAX_LINES_CHANGED` (default: 300)
 
 ## Verify it works

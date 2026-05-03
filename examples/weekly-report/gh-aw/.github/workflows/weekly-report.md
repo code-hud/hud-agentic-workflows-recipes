@@ -43,7 +43,7 @@ timeout-minutes: 90
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: read       # `safe-outputs.create-pull-request` (below) elevates this internally — no `write` needed here
   # id-token: write    # add ONLY for AWS Bedrock (AWS OIDC, not Hud)
 
 network:

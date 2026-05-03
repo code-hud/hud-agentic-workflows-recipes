@@ -20,7 +20,7 @@ The phases are defined as separate prompt files under `deep-insights/`, so indiv
 | Path | Purpose |
 |---|---|
 | `.github/workflows/weekly-report.md` | The gh-aw workflow (frontmatter + agent prompt) |
-| `.github/workflows/deep-insights/*.txt` | Six phase prompts: investigate, health-audit, solutions, blame, deslop, self-heal, format |
+| `.github/workflows/deep-insights/*.txt` | Phase prompts: `investigate.txt` and `health-audit.txt` are alternates picked by `investigation_mode`; `solutions`, `blame`, `deslop`, `self-heal`, and `format` always run |
 
 Drop these into your customer repo at the same paths and run `gh aw compile` to generate the `.lock.yml`.
 
@@ -30,7 +30,7 @@ Drop these into your customer repo at the same paths and run `gh aw compile` to 
 |---|---|
 | `HUD_MCP_KEY` | Hud dashboard → Settings → MCP keys |
 | `ANTHROPIC_API_KEY` | console.anthropic.com |
-| `SLACK_BOT_TOKEN` | A Slack app with `chat:write` + `users:read.email` scopes, installed in your workspace |
+| `SLACK_BOT_TOKEN` | A Slack app with `chat:write` + `users:read.email` scopes, installed in your workspace. The bot must be a member of the target channel; add `chat:write.public` if you'd rather post to public channels without inviting it. |
 | `SLACK_CHANNEL` | The default channel ID (overridable per-run via dispatch input) |
 
 ## Inputs
@@ -55,6 +55,10 @@ All inputs are optional — the workflow has sensible defaults.
 For the first few runs, consider:
 - Setting `open_pr: false` to disable self-heal until you trust the fixes.
 - Scoping `services` to one or two services to limit cost.
+
+## Jira (optional)
+
+Phase 6's Slack message includes an "Open Jira Ticket" button that points at `https://org-name.atlassian.net/secure/CreateIssueDetails!init.jspa?pid=ORG&...`. Before shipping, search-and-replace `org-name` (Jira host) and `ORG` (Jira project ID) in [`deep-insights/format.txt`](.github/workflows/deep-insights/format.txt) — or strip the second button entirely if you don't use Jira.
 
 ## Service discovery
 

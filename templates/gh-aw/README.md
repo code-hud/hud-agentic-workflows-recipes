@@ -20,13 +20,13 @@ Minimal [gh-aw](https://github.com/githubnext/gh-aw) agent skeleton: Hud MCP + C
 | Secret | Where it comes from |
 |---|---|
 | `HUD_MCP_KEY` | Hud dashboard → Settings → MCP keys |
-| `ANTHROPIC_API_KEY` | console.anthropic.com (or [`docs/auth.md`](../../docs/auth.md) for the Bedrock variant) |
+| `ANTHROPIC_API_KEY` | console.anthropic.com (or [`docs/auth.md`](../../docs/auth.md) for the Bedrock variant). The `engine: claude` line in the workflow frontmatter picks this up from repo secrets automatically — no env block needed. |
 
 ## Common tweaks
 
 - **Schedule it.** Add a `schedule:` block to the `on:` frontmatter section (note: GitHub `schedule:` only fires on the default branch).
 - **Add Slack output.** Add `safe-outputs: { create-pull-request: ... }` for self-heal PRs, or include `SLACK_BOT_TOKEN` env + a final step that posts to Slack.
-- **Tighten the network allow-list.** The default allows `defaults`, `node`, `github`, plus `api.hud.io` / `cdn.hud.io`. Remove anything you don't need.
+- **Tighten the network allow-list.** The default allows `defaults`, `node`, `github`, plus `api.hud.io` / `cdn.hud.io` (the latter for runtime resources fetched by `hud-mcp@v2` — *not* for the legacy `mcp-linux-x64` download path documented as wrong in [`docs/auth.md`](../../docs/auth.md)). Remove anything you don't need.
 - **Adjust timeout.** Default is 30 minutes. Bump for long analysis runs.
 
 ## Reference examples

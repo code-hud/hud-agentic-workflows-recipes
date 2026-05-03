@@ -4,6 +4,8 @@ A blank skeleton for a Claude scheduled remote task that uses the Hud MCP for pr
 
 ## How to register
 
+The `scheduled-tasks` MCP is currently an Anthropic-managed server — check the Claude Code docs for the canonical install path; if it's not enabled in your environment, ship the on-demand [skill variant](../skill/) instead.
+
 Use `mcp__scheduled-tasks__create_scheduled_task` to register the prompt below. From a Claude Code session:
 
 ```
