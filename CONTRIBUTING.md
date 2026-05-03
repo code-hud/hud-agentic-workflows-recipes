@@ -25,7 +25,7 @@ Recipes are cross-cutting patterns — e.g. team-splitting strategies, secret ro
 ## Style
 
 - Per-leaf `README.md` is mandatory. Anyone landing on the leaf via a deep link should not need to read the parent README to understand what they're looking at.
-- Sanitize customer specifics. Use `acme`, `acme-org`, `acme.atlassian.net`, `ACME` (Jira project key) as placeholders.
+- Sanitize customer specifics. Use `org-name` (GitHub org slug), `org-name.atlassian.net` (Jira host), and `ORG` (Jira project key) as placeholders.
 - Auth: always `HUD_MCP_KEY` + `npx -y hud-mcp@v2`. **Never** ship OIDC token-exchange patterns against Hud — that's a legacy and always wrong.
 - Models: prefer `sonnet` as the default; document Bedrock alternatives in the README, don't fork the workflow.
 

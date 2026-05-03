@@ -58,14 +58,14 @@ Add `GITHUB_PERSONAL_ACCESS_TOKEN` as an automation-level environment variable (
 
 ### 4. Customer-specific values to replace
 
-This template uses `acme-org` placeholders. Before running, search-and-replace:
+This template uses `org-name` placeholders. Before running, search-and-replace:
 
 | Placeholder | Replace with |
 |---|---|
-| `acme-org` | Your GitHub org slug |
-| `dimensions/acme` | Your service-inventory path |
-| `acme.atlassian.net` | Your Jira host |
-| `ACME` (Jira project key) | Your Jira project key |
+| `org-name` | Your GitHub org slug |
+| `dimensions/org-name` | Your service-inventory path |
+| `org-name.atlassian.net` | Your Jira host |
+| `ORG` (Jira project key) | Your Jira project key |
 
 ---
 
@@ -88,7 +88,7 @@ Use the Hud MCP (`@hud`) to query production invocation data. Use the Atlassian 
 
 Fixed values:
 
-- `JIRA_PROJECT_KEY`: `ACME`
+- `JIRA_PROJECT_KEY`: `ORG`
 - `LOOKBACK_DAYS`: `60`
 - `BASE_BRANCH`: `master`
 - `MAX_LINES_CHANGED`: `300`
@@ -102,7 +102,7 @@ Derived values:
 
 `SERVICE_NAMES` must be resolved from the platform-inventory manifest before running dead-code queries.
 
-The manifest file is `{REPO_NAME}:manifest.json`, located at `dimensions/acme/entity/{REPO_NAME}:manifest.json` in the GitHub repo `acme-org/platform-inventory` (branch: `master`).
+The manifest file is `{REPO_NAME}:manifest.json`, located at `dimensions/org-name/entity/{REPO_NAME}:manifest.json` in the GitHub repo `org-name/platform-inventory` (branch: `master`).
 
 **Important:** the GitHub MCP is scoped to the triggering repo and cannot access platform-inventory. Use a direct shell `curl` to the GitHub API instead.
 
@@ -114,7 +114,7 @@ The `GITHUB_PERSONAL_ACCESS_TOKEN` env var must be set as an automation-level en
 curl -sf \
   -H "Authorization: token $GITHUB_PERSONAL_ACCESS_TOKEN" \
   -H "Accept: application/vnd.github.v3.raw" \
-  "https://api.github.com/repos/acme-org/platform-inventory/contents/dimensions/acme/entity/${REPO_NAME}%3Amanifest.json?ref=master"
+  "https://api.github.com/repos/org-name/platform-inventory/contents/dimensions/org-name/entity/${REPO_NAME}%3Amanifest.json?ref=master"
 ```
 
 The colon in the filename must be URL-encoded as `%3A`. The `v3.raw` Accept header returns the raw JSON content directly.
@@ -282,7 +282,7 @@ After file-existence filter, if zero candidates remain:
 
 ```
 Tool: search_pull_requests (GitHub MCP)
-Query: repo:acme-org/{REPO_NAME} is:open label:HUD
+Query: repo:org-name/{REPO_NAME} is:open label:HUD
 ```
 
 If found:
@@ -379,7 +379,7 @@ After the automation creates the PR:
 ```
 Tool: issue_write (GitHub MCP)
 method:       update
-owner:        acme-org
+owner:        org-name
 repo:         {REPO_NAME}
 issue_number: {PR_NUMBER}
 labels:       ["HUD"]
@@ -404,7 +404,7 @@ Structure your final output so the automation creates a PR with:
 - Services: {SERVICE_NAMES joined by ', ' — wrapped in backticks each}
 
 {IF JIRA_TICKET_KEY exists}
-**Jira:** [{JIRA_TICKET_KEY}](https://acme.atlassian.net/browse/{JIRA_TICKET_KEY})
+**Jira:** [{JIRA_TICKET_KEY}](https://org-name.atlassian.net/browse/{JIRA_TICKET_KEY})
 {END IF}
 
 ---

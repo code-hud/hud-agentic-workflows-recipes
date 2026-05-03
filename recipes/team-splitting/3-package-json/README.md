@@ -18,15 +18,15 @@ Each service's `package.json` should set `author` either as an object or a strin
 
 ```json
 {
-  "name": "@acme/api-gateway",
+  "name": "@org-name/api-gateway",
   "author": { "name": "Platform" }
 }
 ```
 
 ```json
 {
-  "name": "@acme/billing",
-  "author": "Billing <billing@acme.com>"
+  "name": "@org-name/billing",
+  "author": "Billing <billing@org-name.com>"
 }
 ```
 
@@ -76,7 +76,7 @@ python3 discover.py --root services --root packages
 
 - **Service ships without `author` populated.** It lands in the skipped list — surface this as a warning, not a hard fail, so the report still runs.
 - **Two services with the same `author`.** They group together — that's the point. If they shouldn't, fix the `author` field, not the script.
-- **Author field as raw email.** The string-form parser strips `<...>` so `"alice@acme.com"` becomes empty. Use the object form (`{ "name": "Team", "email": "..." }`) when in doubt.
+- **Author field as raw email.** The string-form parser strips `<...>` so `"alice@org-name.com"` becomes empty. Use the object form (`{ "name": "Team", "email": "..." }`) when in doubt.
 
 ## When to pick this pattern
 

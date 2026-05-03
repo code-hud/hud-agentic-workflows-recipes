@@ -37,10 +37,10 @@ Before pasting the prompt into Cursor, search-and-replace:
 
 | Placeholder | Replace with |
 |---|---|
-| `acme-org` | Your GitHub org slug |
-| `dimensions/acme` | Your service-inventory path |
-| `acme.atlassian.net` | Your Jira host |
-| `ACME` (Jira project key) | Your Jira project key |
+| `org-name` | Your GitHub org slug |
+| `dimensions/org-name` | Your service-inventory path |
+| `org-name.atlassian.net` | Your Jira host |
+| `ORG` (Jira project key) | Your Jira project key |
 
 Also confirm the fixed-value inputs at the top of the agent prompt match your conventions:
 
