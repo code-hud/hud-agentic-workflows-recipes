@@ -36,13 +36,12 @@
       MAX_SERVICES = 3
 
     Weights (must sum to 1.0):
-      WEIGHT_ABSOLUTE_INVOCATIONS = 0.20
+      WEIGHT_ABSOLUTE_INVOCATIONS = 0.15
       WEIGHT_TRAFFIC_PERCENTAGE = 0.15
-      WEIGHT_LATENCY_SENSITIVITY = 0.15
+      WEIGHT_LATENCY_SENSITIVITY = 0.10
       WEIGHT_DURATION_VARIABILITY = 0.10
       WEIGHT_ENDPOINT_COUNT = 0.10
-      WEIGHT_STABILITY = 0.05
-      WEIGHT_CODE_CHANGE_RISK = 0.25
+      WEIGHT_CODE_CHANGE_RISK = 0.40
   </CONFIG_DEFAULTS>
 
   <BLAST_RADIUS_DEFINITION>
@@ -206,7 +205,7 @@
     1) Absolute invocations factor:
        - Use total endpoint invocations of affected endpoints in the service (sum across affectedEndpoints for that service).
        - Normalize with a soft cap:
-         absInvFactor = min(1, log10(1 + affectedInvocations) / log10(1 + 1e7))
+         absInvFactor = min(1, log10(1 + affectedInvocations) / log10(1 + 1e8))
 
     2) Traffic percentage factor:
        pctTrafficFactor = clamp( affectedInvocations / total_service_invocations, 0, 1 )
@@ -216,8 +215,8 @@
        - Convert to factor with a fast-threshold:
          latencySensitivityFactor =
            1                        if p90_ms <= 50
-           linearly down to 0.2     at p90_ms = 500
-           0.2                      if p90_ms >= 500
+           linearly down to 0.1     at p90_ms = 500
+           0.1                      if p90_ms >= 500
 
     4) Duration variability factor:
        - Use weighted avg stddev_duration_ms across affected endpoints (weight by invocations).
@@ -227,19 +226,21 @@
     5) Endpoint count factor:
          endpointCountFactor = min(1, distinctEndpoints / 25)
 
-    6) Stability score factor (small weight):
-       - Use average endpoint error_rate across affected endpoints (weight by invocations).
-       - More stable (lower error rate) => higher risk-to-change:
-         stabilityFactor = 1 - clamp(avg_error_rate / 0.02, 0, 1)
-         (so 0% errors -> 1.0, 2%+ errors -> 0.0)
-
-    7) Code Change Risk Factor (AI Assessment):
+    6) Code Change Risk Factor (AI Assessment):
        - Assess the inherent risk of the code changes based on the diff content (0.0 to 1.0).
-       - 1.0 (Critical): Modifies core/shared utilities, removes error handling, complex concurrency/locking, destructive DB schema changes.
-       - 0.7 (High): Complex logic in high-traffic paths, new external dependencies.
-       - 0.4 (Medium): Standard feature work, refactoring with tests.
-       - 0.1 (Low): Additive-only changes, config updates, documentation/comments.
+       - Use the rubric below; pick the closest tier and interpolate within it.
+         - 0.95 (Critical): Destructive DB migrations, auth/permission/session logic, removed error handling, anything irreversible in prod.
+         - 0.75 (High):     Complex concurrency/locking, new external dependencies, schema additions, changes to core/shared utilities.
+         - 0.50 (Elevated): Non-trivial logic in critical paths, refactors without full test coverage, behavior changes in hot code.
+         - 0.30 (Standard): Standard feature work with tests, contained refactors, well-covered changes.
+         - 0.15 (Low):      Config/env tweaks, additive non-logic changes, log message changes, copy updates.
+         - 0.05 (Trivial):  Comments, docs, typos, dead-code removal, formatting-only changes.
        - codeChangeRiskFactor = <assessed value>
+
+    Note on error rate:
+       Endpoint error_rate is no longer a score factor (the prior stabilityFactor has been removed).
+       Surface it as context in the Affected Endpoints table so reviewers can see whether an
+       endpoint is already flaky, but do not feed it into the score.
 
     Combine per service:
       serviceScore01 =
@@ -248,14 +249,23 @@
         WEIGHT_LATENCY_SENSITIVITY * latencySensitivityFactor +
         WEIGHT_DURATION_VARIABILITY* variabilityFactor +
         WEIGHT_ENDPOINT_COUNT      * endpointCountFactor +
-        WEIGHT_STABILITY           * stabilityFactor +
         WEIGHT_CODE_CHANGE_RISK    * codeChangeRiskFactor
 
     Final score:
       blastRadiusScore = round(100 * weightedAvg(serviceScore01 by total_service_invocations))
 
+    Trivial-diff cap:
+      If the PR diff only touches one or more of:
+        - comments (line/block comments in any language)
+        - whitespace / formatting only
+        - string literal content (e.g. log messages, user-facing copy) with no logic change
+        - test files (paths matching **/*.test.*, **/*.spec.*, **/__tests__/**, **/test/**, **/tests/**)
+      and contains NO changes to executable production code, cap blastRadiusScore at 15.
+      Note: .md files are NOT covered by this cap (they may be agentic workflow prompts).
+      Apply the cap AFTER the weighted average, before the risk-level mapping.
+
     Risk level mapping:
-      0-30 Low, 31-60 Medium, 61-80 High, 81-100 Critical
+      0-20 Low, 21-45 Medium, 46-70 High, 71-100 Critical
   </SCORING_MODEL>
 
   <EARLY_EXIT_ZERO_FUNCTIONS>

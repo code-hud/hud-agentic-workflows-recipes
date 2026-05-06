@@ -2,6 +2,8 @@
 
 > Compare current vs. previous release health and recommend rollback / investigate / clean.
 
+![Hud rollback-check verdict — per-version analysis with regressed endpoints, function attribution, and recommended action](../../docs/Rollback%20check.png)
+
 After a deploy, the question every SRE asks is "should I roll this back?" Most teams answer it by squinting at dashboards. This routine answers it by:
 
 1. Identifying which endpoints belong to the new version (deployment-based or, for config-only deploys, traffic-based).

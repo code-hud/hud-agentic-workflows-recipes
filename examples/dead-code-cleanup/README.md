@@ -2,6 +2,8 @@
 
 > Find zero-traffic functions, open a Jira ticket, and ship a PR removing them.
 
+![Hud dead-code cleanup PR — list of removed functions with traffic data, methodology block, and `HUD` label](../../docs/Dead%20code.png)
+
 Most codebases accumulate dead code at the rate of feature work. Most teams know they should clean it up but never quite get around to it. This workflow uses Hud's production runtime data to find functions with zero invocations over the last 60 days, runs safety checks (don't delete framework hooks, public APIs, dynamic references, etc.), and ships the cleanup as an automated PR.
 
 ## Why teams use it

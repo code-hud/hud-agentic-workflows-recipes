@@ -2,6 +2,8 @@
 
 > A weekly Slack post summarizing what regressed in production, with proposed fixes and (optionally) a self-heal PR.
 
+![Hud weekly production report posted to Slack — top regressions, contributors @-mentioned, self-heal PR linked](../../docs/Weekly%20report.png)
+
 Every Monday morning the team gets a single Slack message: "here's what got worse last week, here's why, here's the fix, and a draft PR is already open." Engineers see the issue with their @-mention, click into the PR, and decide whether to ship it.
 
 ## Why teams use it
