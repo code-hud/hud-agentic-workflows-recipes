@@ -2,7 +2,7 @@
 
 > Score the production blast radius of every pull request and post the result as a comment.
 
-![Hud blast-radius PR comment — score, summary, and per-function breakdown](../../docs/Blast%20radius.png)
+![Hud blast-radius PR comment — score, summary, and per-function breakdown](../../docs/blast-radius.png)
 
 When a PR is opened, this workflow asks Hud "what does production look like for the code this PR touches?" and turns the answer into a single 0–100 score plus a written report. Reviewers see at a glance whether they're looking at a one-line tweak to a hot path or a sweeping change to dead code.
 
