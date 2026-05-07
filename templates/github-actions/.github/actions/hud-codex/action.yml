@@ -1,0 +1,73 @@
+name: 'Hud + Codex CLI'
+description: 'Composite action: install Codex CLI, configure Hud MCP, run a prompt'
+author: 'Hud'
+
+inputs:
+  hud-mcp-key:
+    description: 'Hud MCP key (from Hud dashboard, stored as a repo secret)'
+    required: true
+  openai-api-key:
+    description: 'OpenAI API key'
+    required: true
+  task-prompt:
+    description: 'Inline task prompt. If empty, reads .github/actions/hud-codex/prompt.txt'
+    required: false
+    default: ''
+  model:
+    description: 'Model for Codex CLI (e.g. o4-mini, o3, gpt-4.1)'
+    required: false
+    default: 'o4-mini'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Setup MCP config (config.toml)
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p ~/.codex
+        cat > ~/.codex/config.toml <<EOF
+        [mcp_servers.hud]
+        command = "npx"
+        args = ["-y", "hud-mcp@v2"]
+        env_vars = ["HUD_MCP_KEY"]
+        EOF
+
+    - name: Install Codex CLI
+      shell: bash
+      run: |
+        set -euo pipefail
+        npm install -g @openai/codex
+        codex --version
+
+    - name: Resolve task prompt
+      id: prompt
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -n "${{ inputs.task-prompt }}" ]; then
+          echo "${{ inputs.task-prompt }}" > /tmp/prompt.txt
+        elif [ -f "${{ github.action_path }}/prompt.txt" ]; then
+          cp "${{ github.action_path }}/prompt.txt" /tmp/prompt.txt
+        else
+          echo "No task prompt provided. Pass via inputs.task-prompt or write to .github/actions/hud-codex/prompt.txt."
+          exit 1
+        fi
+
+    - name: Run agent
+      shell: bash
+      env:
+        CODEX_API_KEY: ${{ inputs.openai-api-key }}
+        HUD_MCP_KEY: ${{ inputs.hud-mcp-key }}
+      run: |
+        set -euo pipefail
+        codex exec \
+          --model "${{ inputs.model }}" \
+          --sandbox workspace-write \
+          - < /tmp/prompt.txt \
+          2>&1 | tee "$GITHUB_STEP_SUMMARY"

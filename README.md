@@ -31,12 +31,12 @@ Pick a runner from [`templates/`](templates/), write your own prompt (or use [`r
 
 | Runner | Integration | What you do | Best for |
 |---|---|---|---|
-| **GitHub Actions** | Copy files | Copy `.github/` files to repo, set secrets | PR-triggered workflows, cron jobs, teams already on GH Actions |
+| **GitHub Actions** | Copy files | Copy `.github/` files to repo, set secrets. Ships with Claude Code CLI and Codex CLI actions; pick one. | PR-triggered workflows, cron jobs, teams already on GH Actions |
 | **gh-aw** | Copy files | Copy `.github/workflows/*.md`, run `gh aw compile`, set secrets | Same triggers as GH Actions but with markdown+YAML agent format |
 | **Cursor** | Copy + UI | Copy `AGENTS.md` to repo, create automation in Cursor dashboard, add MCP servers, set secrets | Teams using Cursor, manual or scheduled triggers |
 | **Claude routine** | Copy file _or_ register | **Skill:** copy `.claude/skills/` to repo. **Scheduled:** register prompt via MCP tool call | On-demand (skill) or continuous cron monitoring (scheduled) |
 
-GitHub Actions is CLI-agnostic. Default uses Claude Code CLI; swap in Codex or any MCP-compatible CLI.
+GitHub Actions ships with two CLI options (Claude Code and Codex). Pick one in the workflow file.
 
 ## How to combine
 

@@ -7,8 +7,9 @@ Every example documents its own required secrets. This is the consolidated view 
 | Secret | Required by | Source |
 |---|---|---|
 | `HUD_MCP_KEY` | All examples | Hud dashboard → Settings → MCP keys |
-| `ANTHROPIC_API_KEY` | gh-aw + GitHub Actions examples (Anthropic route). Cursor uses its built-in model auth — no key needed. | console.anthropic.com |
-| `AWS_ROLE_TO_ASSUME` | gh-aw + GitHub Actions examples (Bedrock route only) | IAM role with `bedrock:InvokeModel` |
+| `ANTHROPIC_API_KEY` | gh-aw + GitHub Actions with Claude Code CLI. Cursor uses its built-in model auth, no key needed. | console.anthropic.com |
+| `OPENAI_API_KEY` | GitHub Actions with Codex CLI | platform.openai.com |
+| `AWS_ROLE_TO_ASSUME` | gh-aw + GitHub Actions (Bedrock route only) | IAM role with `bedrock:InvokeModel` |
 | `SLACK_BOT_TOKEN` | weekly-report | Slack app with `chat:write` + `users:read.email` scopes |
 | `SLACK_CHANNEL` | weekly-report | Slack channel ID (or override per-run) |
 | `TEAM_READ_TOKEN` | Any workflow using [`recipes/team-splitting/2-github-teams/`](../recipes/team-splitting/2-github-teams/) | GitHub PAT with `read:org` scope |
@@ -19,7 +20,8 @@ Every example documents its own required secrets. This is the consolidated view 
 ### blast-radius (github-actions)
 
 - [ ] `HUD_MCP_KEY`
-- [ ] `ANTHROPIC_API_KEY` (or `AWS_ROLE_TO_ASSUME` for Bedrock — see [`auth.md`](auth.md))
+- [ ] `ANTHROPIC_API_KEY` if using Claude Code CLI (or `AWS_ROLE_TO_ASSUME` for Bedrock, see [`auth.md`](auth.md))
+- [ ] `OPENAI_API_KEY` if using Codex CLI instead
 
 ### weekly-report (gh-aw)
 
