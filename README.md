@@ -4,23 +4,27 @@
 
 ## What's in here
 
-This repo collects ready-to-install examples of agentic workflows that turn Hud's production runtime data into actionable developer-facing automations — surfaced where developers already work (PRs, IDE, Slack, weekly reports). Each example ships with the workflow code, prompts, and an install README.
+This repo collects ready-to-install agentic workflows that turn Hud's production runtime data into actionable developer-facing automations — surfaced where developers already work (PRs, IDE, Slack, weekly reports).
 
-Three layers:
+The mental model is **runner + prompt**: pick what you want to run on (templates) and what you want it to do (recipes/prompts), then drop them into your repo.
 
 | Folder | What | Use it when |
 |---|---|---|
-| [`templates/`](templates/) | Blank skeletons (Hud + a model, no task) for each platform | Starting a new agent and want a clean scaffold |
-| [`examples/`](examples/) | Real, working use cases | You have a specific use case (blast radius, weekly report, dead code, rollback) |
-| [`recipes/`](recipes/) | Cross-cutting patterns (e.g. team-splitting) that plug into any example | Adapting an example to your team/service shape |
+| [`templates/`](templates/) | Runner skeletons — gh-aw, GitHub Actions, Cursor, Claude routine | Pick the platform you want to run on |
+| [`recipes/prompts/`](recipes/prompts/) | Use-case prompts — blast-radius, weekly-report, dead-code-cleanup, rollback-check | Pick what you want the agent to do |
+| [`recipes/team-splitting/`](recipes/team-splitting/) | Cross-cutting patterns for scoping by team or service | Adapt any combo to your team shape |
+| [`examples/`](examples/) | Fully worked combos (runner + prompt + install README) | Reference / install-ready starting points |
 
 ## Quick start
 
-1. Pick an example from [`examples/`](examples/) that matches a pain you're feeling.
-2. Read its `README.md` — it lists the secrets you need and where each file goes.
-3. Copy the files into your repo, set the secrets, and ship a test PR / scheduled run.
+Pick a **runner** + pick a **prompt** → combine in your repo.
 
-If you're starting from scratch with a custom task, start in [`templates/`](templates/) instead.
+1. **Choose a runner** from [`templates/`](templates/) — gh-aw, GitHub Actions, Cursor Cloud Agent, or Claude routine (skill or scheduled remote).
+2. **Choose a prompt** from [`recipes/prompts/`](recipes/prompts/) — blast-radius, weekly-report, dead-code-cleanup, or rollback-check.
+3. **Drop both into your repo**, set the secrets ([`docs/secrets.md`](docs/secrets.md)), and ship a test PR / scheduled run.
+4. **Different combo?** (Codex over GitHub Actions, weekly-report on Cursor, etc.) Ask your agent to adapt the runner template to fit the prompt — separating runner from prompt is what makes that easy.
+
+Want a complete worked combo as reference? See [`examples/`](examples/) — each is one runner + one prompt, install-ready.
 
 ## Examples
 
@@ -42,9 +46,10 @@ If you're starting from scratch with a custom task, start in [`templates/`](temp
 
 ## Recipes
 
-| Pattern | Path |
+| Folder | What |
 |---|---|
-| Team-splitting (3 ways: config file · GitHub Teams · `package.json`) | [`recipes/team-splitting/`](recipes/team-splitting/) |
+| [`prompts/`](recipes/prompts/) | The four use-case prompts — drop them into any runner |
+| [`team-splitting/`](recipes/team-splitting/) | Three strategies for scoping a workflow by team or service (config file · GitHub Teams · `package.json`) |
 
 ## Auth
 

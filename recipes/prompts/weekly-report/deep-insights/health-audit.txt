@@ -1,0 +1,146 @@
+<PROMPT>
+  <GOAL>
+    Analyze Hud production data to provide an ABSOLUTE health audit.
+    Unlike the weekly report, this is NOT about "what changed since last week".
+    It is about "what is bad right now" -- finding the biggest optimization opportunities and architecture anti-patterns.
+    
+    Write your complete findings to /tmp/analysis_findings.md. A separate step will add suggested fixes.
+  </GOAL>
+
+  <RESOURCES>
+    1. **hud-mcp** (primary): EndpointMetrics, FunctionMetrics, Forensics, MachineMetrics, HighResolutionMetrics.
+    2. **Local Filesystem**: You are running in the root of the repository. You can read source files directly.
+  </RESOURCES>
+
+  <CRITICAL_QUERY_RULES>
+    1. **Get Schema First**: ALWAYS call `hud-get-schema` first to understand the database structure.
+    2. **Service Filtering**: ALWAYS filter by `service_name` in every query. If a services filter was provided in the workflow parameters (`$HUD_SERVICES`), restrict ALL queries to only those service names. Do not include data from any other service.
+    3. **Timeframe Filtering**: ALWAYS filter by `timestamp` (or `hour`) in every query.
+    4. **Join Safety**: 
+       - NEVER JOIN `Forensics` with metrics tables (EndpointMetrics/FunctionMetrics). Query them separately.
+       - Every table in a JOIN must have its own time filter.
+    5. **Aggregation**: Use `SUM(invocations)` for total invocations, NOT `COUNT(*)`.
+    6. **Resolution**: Use `LowResolution` tables for time ranges > 10 hours, `HighResolution` for shorter ranges.
+  </CRITICAL_QUERY_RULES>
+
+  <WORKFLOW>
+    PHASE 1: DISCOVERY (Scan for Candidates)
+    Run broad queries across ALL services (last 7 days) to find the top 10-15 worst offenders in each category.
+    
+    **Track A: Performance Health**
+    1. **Total Time Sinks**: `FunctionMetricsLowResolution` grouped by function, ordered by `SUM(total_duration_ms) DESC`.
+    2. **Latency Outliers**: `percentileMS(duration_buckets, N)` for P50/P90/P99/P100, rank by P99/P50 ratio.
+    3. **Bimodal Functions**: `percentileMS` for P50 and P99, flag when P99/P50 > 50x and P50 > 0.1ms and invocations > 100K.
+    4. **Duration Drift**: Daily avg per function, compare first day vs last day, flag growth_factor > 1.5.
+    5. **Sustained High Variance**: Hourly stddev via `total_squared_duration_ms`, coefficient of variation per endpoint, require high CV on > 24 hours.
+    6. **Scale Issues**: `corr(bucket_invocations, bucket_avg_duration_ms)` from `EndpointMetricsHighResolution`, flag correlation > 0.4.
+    7. **Error Hotspots**: `function_error_rate()` + `endpoint_error_rate()`, rank by absolute error count (`rate * invocations`).
+
+    **Track B: Architecture Anti-Patterns**
+    8. **N+1 Infra Calls**: First `SELECT DISTINCT third_party FROM Functions WHERE third_party != ''` to discover infra libraries. Then join `FunctionMetricsLowResolution` with `Functions` where `third_party != ''`, compare invocations to endpoint invocations, rank by `infra_ms_per_request`.
+    9. **N+1 Code Patterns**: Compare function invocations vs endpoint invocations for same `wrapped_endpoint_id`, flag ratio > 50. Prioritize by total time consumed.
+    10. **Recursive Functions**: `WHERE function_id = caller_function_id AND caller_function_id > 0`, rank by invocation count.
+    11. **Bottleneck Monopoly**: For each function in an endpoint, compute `parent_total_ms - SUM(callee_total_ms)` using `caller_function_id` to identify callees. Rank by `self_time_ms DESC`.
+    12. **Endpoint Complexity**: `COUNT(DISTINCT function_id)` per `wrapped_endpoint_id`, flag > 100.
+    13. **Third-Party Hotspots**: `Functions.third_party != ''`, join with metrics, rank by `SUM(total_duration_ms)`. Group by `third_party` for summary.
+    14. **Silent Error Masking**: Compare `function_error_rate` vs `endpoint_error_rate` for same endpoint, flag when function error > 5% but endpoint < 1%.
+    15. **Unnecessary Work**: `avg_ms < 0.01 AND invocations > 1M`, rank by invocation count.
+    16. **Async Overhead**: `Functions.is_async = true` joined with metrics where `avg_ms < 0.1 AND invocations > 1M`.
+
+    PHASE 2: SELECTION (Pick Exactly 5 — Discard the Rest)
+    From all Phase 1 candidates, select EXACTLY 5 insights. Drop everything else.
+    Scoring criteria (multiply together):
+    - **Impact**: Magnitude * Volume. A 10ms regression on 1B calls is huge. A 10s regression on 5 calls is minor.
+    - **Actionability**: Can we fix it? (e.g., optimize query, add cache, remove loop). Drop unfixable items.
+    - **Diversity**: Pick from different categories. Avoid 5 insights of the same type.
+    Mark each as **ONGOING** (actionable, should be fixed) or **RESOLVED** (informational).
+
+    **CRITICAL**: After selecting 5, STOP. Do NOT proceed to Phase 3 for any candidate that didn't make the top 5.
+
+    PHASE 3: DEEP DIVE (Investigation)
+    For each of the 5 selected insights ONLY:
+    1. **What**: Metric details, business impact.
+    2. **Timeline**: Is it constant? Growing? Spiky?
+    3. **Forensics**: 
+       - Query `Forensics` table for relevant `forensic_id`s.
+       - Use `hud-get-forensics` to get the JSON.
+       - Extract exceptions, outbound calls, and user context.
+    4. **Functions**: Identify top contributing functions using the specific queries from Phase 1.
+    5. **Root Cause**: Pinpoint specific function/query/line.
+
+    PHASE 4: SOURCE CODE EXTRACTION
+    For the primary root-cause function in each insight:
+    1. Identify the file path from `FunctionMetrics` or `Forensics`.
+    2. READ the actual file content from the local filesystem.
+    3. Extract the relevant code snippet.
+
+    PHASE 5: OUTPUT
+    Write the final findings to /tmp/analysis_findings.md using the Output Spec.
+    
+    LINK FORMATS (include these in your findings):
+    - Endpoint: https://app.hud.io/explore/endpoints/{endpoint_id}-{service_id}?environment=production
+    - Function: https://app.hud.io/explore/functions/{function_id}?environment=production
+  </WORKFLOW>
+
+  <OUTPUT_SPEC>
+    Write ALL findings to /tmp/analysis_findings.md using this structure.
+    Do NOT include a "Suggested Fix" section — that will be added by a separate step.
+
+    ```
+    # Production Health Audit
+    Date range: [start] — [end]
+
+    ## Insight 1: [Category] — [Endpoint/Service]
+    **Status:** ONGOING / RESOLVED
+    **Endpoint:** `path` (endpoint_id: X, service_id: Y)
+    **Service:** name
+    **Impact:** [1 sentence why it matters]
+    **Complexity:** [1-5] | **Est. Fix:** [time]
+
+    ### What Happened
+    [Description with numbers — absolute values, ratios, total impact. P99/P100 values in human-readable format (ms/s/m)]
+
+    ### Timeline & Scope
+    Pattern: [Constant / Growing / Spiky]
+    Scope: [endpoint/service-wide]
+    Affected Accounts: [list accounts found in forensics via hud-get-forensics tool - do NOT list session IDs]
+
+    ### Functions Involved
+    (Query ONLY data from the relevant flow)
+    - [function_signature](https://app.hud.io/explore/functions/{function_id}?environment=production) — [metric]
+    - ...
+
+    ### Code Location & Root Cause
+    File: [path]:[line]
+    Call Chain: A -> B -> C
+    ```[language]
+    [actual code snippet from the codebase]
+    ```
+    Root Cause: [explanation]
+
+    ### Evidence (Query / Error / EXPLAIN)
+    ```
+    [actual SQL query, error message, or EXPLAIN output]
+    ```
+    Analysis: [verification result]
+
+    ---
+
+    ## Insight 2: ...
+    (repeat for each insight)
+    ```
+  </OUTPUT_SPEC>
+
+  <CRITICAL_RULES>
+    1. **WRITE TO FILE**: You MUST write findings to /tmp/analysis_findings.md. This is the ONLY output that matters.
+    2. **NO SUGGESTED FIX**: Do NOT include a "Suggested Fix" section. A separate step handles that.
+    3. **MANDATORY SECTIONS**: Every insight MUST include: What Happened, Timeline, Functions, Code Location, Evidence.
+    4. **ACTUAL QUERY**: If the issue is a slow DB query, you MUST construct the query yourself based on code logic and run it.
+    5. **TIMELINE**: You MUST query hourly data to get exact start/end times.
+    6. **CODE SNIPPETS**: You MUST read the actual source file and include the real code snippet, not a placeholder.
+    7. **TIME FORMAT**: Convert all durations to human-readable format (e.g., "150ms", "2.5s", "5m"). No raw large millisecond values.
+    8. **HUD LINKS**: Include clickable HUD links for all endpoints and functions using the link formats above.
+    9. After writing the file, confirm by printing a short summary of what you found (number of insights, categories).
+    10. **ACCOUNTS**: Never report session IDs (e.g., "91fa...") as affected accounts. You must extract real account names/IDs from the forensic JSON `userContext`.
+  </CRITICAL_RULES>
+</PROMPT>

@@ -1,0 +1,156 @@
+<PROMPT>
+  <GOAL>
+    Analyze Hud production data (current week vs previous week) to find 5 actionable performance insights.
+    Write your complete findings to /tmp/analysis_findings.md. A separate step will add suggested fixes.
+  </GOAL>
+
+  <RESOURCES>
+    1. **hud-mcp** (primary): EndpointMetrics, FunctionMetrics, Forensics, MachineMetrics, HighResolutionMetrics.
+    2. **Local Filesystem**: You are running in the root of the repository. You can read source files directly.
+  </RESOURCES>
+
+  <CRITICAL_QUERY_RULES>
+    1. **Get Schema First**: ALWAYS call `hud-get-schema` first to understand the database structure.
+    2. **Service Filtering**: ALWAYS filter by `service_name` in every query. If a services filter was provided in the workflow parameters (`$HUD_SERVICES`), restrict ALL queries to only those service names. Do not include data from any other service.
+    3. **Timeframe Filtering**: ALWAYS filter by `timestamp` (or `hour`) in every query.
+    4. **Join Safety**: 
+       - NEVER JOIN `Forensics` with metrics tables (EndpointMetrics/FunctionMetrics). Query them separately.
+       - Every table in a JOIN must have its own time filter.
+    5. **Aggregation**: Use `SUM(invocations)` for total invocations, NOT `COUNT(*)`.
+    6. **Resolution**: Use `LowResolution` tables for time ranges > 10 hours, `HighResolution` for shorter ranges.
+  </CRITICAL_QUERY_RULES>
+
+  <WORKFLOW>
+    PHASE 1: DISCOVERY (Find ~15 candidates)
+    Run these queries to find top candidates. Merge duplicates. These are ranked by priority:
+    1. **Duration Regression**: `ORDER BY (curr_avg_ms - prev_avg_ms) DESC`, `ORDER BY (curr_p90_ms - prev_p90_ms) DESC`
+    2. **Error Rate Spike**: `ORDER BY (curr_error_rate - prev_error_rate) DESC`
+    3. **Status Code Shift**: `ORDER BY (curr_5xx_ratio - prev_5xx_ratio) DESC`
+    4. **P99/P100 Outliers**: `ORDER BY p100_ms DESC`
+    5. **Duration Variance Spike**: `ORDER BY (curr_stddev_ms - prev_stddev_ms) DESC`. Note: Differentiate between sustained high variance (bad) vs 1-2 isolated spikes ( label as "Spikes").
+    6. **Traffic Shift**: `ORDER BY abs(inv_delta) DESC`
+    7. **Anti-Patterns**: High invocation rate functions compared to caller (`avg_ms < 5`, `invocations > 1M`)
+    
+
+    PHASE 2: SELECTION (Filter to Top Candidates)
+    Evaluate the ~15 candidates and select the most relevant ones to investigate:
+    1. **Top 0-3 ONGOING**: Issues that appear active (last seen < 12h ago) with high impact.
+    2. **Top 0-3 RESOLVED**: Major issues that appear to have recovered.
+    **VERIFY CLASSIFICATION**:
+      - **ONGOING**: Currently active or seen within last 12h.
+      - **RESOLVED**: Recovered issues, transient spikes that ended, or intentional changes (migrations).
+    
+    **Baseline Noise Filtering**:
+    - Compare candidates against **same day (1 day) one week earlier** and **7 days earlier** (same duration).
+    - Patterns at similar volume in baselines -> **Noise** (ignore).
+    - Patterns absent/lower in baselines -> **New/Escalating** (prioritize).
+
+    Selection Criteria:
+    1. **Impact**: Magnitude of the negative shift (e.g., 500ms -> 5s latency or 0% -> 5% error rate).
+    2. **Volume**: High traffic endpoints take precedence over low traffic ones.
+    3. **Clarity**: Issues with clear error patterns or distinct spikes are better than noisy data.
+    4. **Customer Impact**: Issues affecting multiple accounts or critical paths.
+
+    PHASE 3: INVESTIGATION (Deep Dive)
+    For the selected candidates only, answer:
+    1. **What**: Metric change, endpoint type, business purpose, effected accounts.
+    2. **Timeline**: Start/end time.
+    3. **Scope**: Endpoint-specific or service-wide?
+    4. **Forensics**: 
+       - **Query**: First, query the `Forensics` table to get `forensic_id`s for the relevant timeframe/service (do NOT join with metrics).
+       - **Fetch Files**: Use the `hud-get-forensics` tool with each `forensic_id` to get the local JSON file path.
+       - **Read & Extract**: READ all the returned files to extract:
+         - Exceptions (name, message, stack trace)
+         - Outbounds (duration, args/query, error)
+         - Machine metrics (CPU, Memory, ELU)
+         - **Affected Accounts**: Extract `accountId` from the top-level `userContext` field (if present). Do NOT use `session_id` from the SQL table. Sample at least 5-10 forensics.
+    5. **Functions**: Identify top contributing functions (time/errors) ONLY from the relevant flow (endpoint/queue). If analyzing a spike, you MUST use session-specific data to pinpoint functions involved in that specific spike.
+    6. **Root Cause**: Pinpoint specific function/query/line.
+
+    PHASE 4: SOURCE CODE EXTRACTION
+    For the primary root-cause function in each insight:
+    1. Identify the file path from `FunctionMetrics` or `Forensics`.
+    2. READ the actual file content from the local filesystem.
+    3. Extract the relevant code snippet (surrounding the line number or function definition).
+
+    PHASE 5: OUTPUT
+    1. **Final Filter**: Ensure candidates are correctly categorized as ONGOING or RESOLVED based on investigation.
+    2. **Write to file**: Write the final findings to /tmp/analysis_findings.md using the Bash or Write tool.
+
+    LINK FORMATS (include these in your findings):
+    - Endpoint: https://app.hud.io/explore/endpoints/{endpoint_id}-{service_id}?environment=production
+    - Function: https://app.hud.io/explore/functions/{function_id}?environment=production
+  </WORKFLOW>
+
+  <OUTPUT_SPEC>
+    Write ALL findings to /tmp/analysis_findings.md using this structure.
+    Do NOT include a "Suggested Fix" section — that will be added by a separate step.
+
+    ```
+    # Deep Insights Analysis Findings
+    Date range: [current week start] — [current week end] vs [previous week start] — [previous week end]
+
+    ## Insight 1: [Category] — [Endpoint/Service]
+    **Status:** ONGOING / RESOLVED
+    **Endpoint:** `path` (endpoint_id: X, service_id: Y)
+    **Service:** name
+    **Impact:** [1 sentence why it matters]
+    **Complexity:** [1-5] | **Est. Fix:** [time]
+
+    ### What Happened
+    [Description with numbers — current vs baseline, % change, P99/P100 values in human-readable format (ms/s/m)]
+
+    ### Timeline & Scope
+    First seen: [datetime] | Last seen: [datetime] | Pattern: [pattern]
+    Scope: [endpoint/service-wide]
+    Affected Accounts: [list accounts found in forensics via hud-get-forensics tool - do NOT list session IDs]
+
+    ### Functions Involved
+    (Query ONLY data from the relevant flow (queue/endpoint). If spike, use session-specific data)
+    - [function_signature](https://app.hud.io/explore/functions/{function_id}?environment=production) — [metric]
+    - ...
+
+    ### Code Location & Root Cause
+    File: [path]:[line]
+    Call Chain: A -> B -> C
+    ```[language]
+    [actual code snippet from the codebase]
+    ```
+    Root Cause: [explanation]
+
+    ### Evidence (Query / Error / EXPLAIN)
+    ```
+    [actual SQL query, error message, or EXPLAIN output]
+    ```
+    Analysis: [verification result]
+
+    ---
+
+    ## Insight 2: ...
+    (repeat for each insight)
+
+    ---
+
+    ## Resolved Events
+
+    ### [Category] — Endpoint — Service
+    Impact: [1 sentence]
+    Timeline: [start] — [end]
+
+    (repeat for each resolved event, max 3)
+    ```
+  </OUTPUT_SPEC>
+
+  <CRITICAL_RULES>
+    1. **WRITE TO FILE**: You MUST write findings to /tmp/analysis_findings.md. This is the ONLY output that matters.
+    2. **NO SUGGESTED FIX**: Do NOT include a "Suggested Fix" section. A separate step handles that.
+    3. **MANDATORY SECTIONS**: Every insight MUST include: What Happened, Timeline, Functions, Code Location, Evidence.
+    4. **ACTUAL QUERY**: If the issue is a slow DB query, you MUST construct the query yourself based on code logic and run it.
+    5. **TIMELINE**: You MUST query hourly data to get exact start/end times.
+    6. **CODE SNIPPETS**: You MUST read the actual source file and include the real code snippet, not a placeholder.
+    7. **TIME FORMAT**: Convert all durations to human-readable format (e.g., "150ms", "2.5s", "5m"). No raw large millisecond values.
+    8. **HUD LINKS**: Include clickable HUD links for all endpoints and functions using the link formats above.
+    9. After writing the file, confirm by printing a short summary of what you found (number of insights, categories).
+    10. **ACCOUNTS**: Never report session IDs (e.g., "91fa...") as affected accounts. You must extract real account names/IDs from the forensic JSON `userContext`.
+  </CRITICAL_RULES>
+</PROMPT>

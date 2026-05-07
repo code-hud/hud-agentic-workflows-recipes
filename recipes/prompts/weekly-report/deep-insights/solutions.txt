@@ -1,0 +1,116 @@
+<PROMPT>
+  <GOAL>
+    You are given a findings file at /tmp/analysis_findings.md containing error or performance insights.
+    For each ONGOING insight, investigate the root cause deeply and generate a concrete suggested fix.
+    Write the final enriched findings (with fixes) to /tmp/analysis_findings.md.
+  </GOAL>
+
+  <RESOURCES>
+    1. **hud-mcp** (primary): EndpointMetrics, FunctionMetrics, Forensics, MachineMetrics, HighResolutionMetrics.
+    2. **Local Filesystem**: You are running in the root of the repository. You can read source files directly.
+  </RESOURCES>
+
+  <CRITICAL_QUERY_RULES>
+    1. **Get Schema First**: ALWAYS call `hud-get-schema` first to understand the database structure.
+    2. **Service Filtering**: ALWAYS filter by `service_name` in every query.
+    3. **Timeframe Filtering**: ALWAYS filter by `timestamp` (or `hour`) in every query.
+    4. **Join Safety**: 
+       - NEVER JOIN `Forensics` with metrics tables. Query them separately.
+       - Every table in a JOIN must have its own time filter.
+    5. **Aggregation**: Use `SUM(invocations)` for total invocations, NOT `COUNT(*)`.
+  </CRITICAL_QUERY_RULES>
+
+  <WORKFLOW>
+    1. READ /tmp/analysis_findings.md to understand all insights.
+
+    2. For each ONGOING insight, START A NEW SUB-AGENT to generate a fix.
+       **CRITICAL: Launch ALL sub-agents IN PARALLEL in a single message** (multiple Tool calls at once).
+       Do NOT wait for one sub-agent to finish before starting the next.
+       Pass ONLY the current insight's data to each sub-agent (not the entire file).
+       The sub-agent must use hud-mcp, codebase, and forensics data to find a solution.
+
+       **TIMEOUT**: Each sub-agent MUST complete within 20 minutes.
+
+       Sub-agent guidelines:
+       * **Preparation**: Call `hud-get-skill` to see if a relevant skill exists (e.g., `investigate-endpoint-error`).
+
+       a. if **Error**:
+          - Look for related error type forensics in `Forensics` table.
+          - call `hud-get-forensics` with the `forensic_id` to get the JSON file path, then READ the file.
+          - Read the relevant source code from the local filesystem.
+          - Suggest a fix based on the exception parameters and the codebase logic.
+       b. if **Performance Bottleneck**:
+          - Analyze where time is being spent in the endpoint (p100, p99, avg).
+          - Calculate total duration of function in endpoint inside relevant sessions and time.
+          - Look for related duration type forensics in `Forensics` table.
+          - call `hud-get-forensics` with the `forensic_id` to get the JSON file path, then READ the file.
+          - choose the actual function or functions in charge to this bottleneck.
+          - Read the relevant source code.
+          - use forensics http params as an example.
+          - suggest a fix to all major contributing functions.
+       c. if **Spike**:
+          - Use Z-scores to compare this spike to other spikes.
+          - Use hud HighResolutionMetrics to understand which function was the first to spike.
+          - Suggest a fix based on the spike pattern.
+       d. **Resource Correlation**:
+          - Check CPU and Memory using `hud-mcp` (MachineMetrics) to see if they correlate.
+       e. if **Database Issue**:
+          - Use `hud-mcp` to query metrics and forensics data to understand the query pattern.
+          - Use `EXPLAIN ANALYZE` logic where applicable. Revalidate solutions against findings.
+       f. **Engineer's Validation (MANDATORY — DO NOT SKIP)**:
+          - **BEFORE writing any fix, you MUST validate your theory with real data.** This is not optional.
+          - Ask yourself: "What follow-up questions would an engineer ask to verify this root cause?"
+          - Specifically, if the issue involves data patterns (e.g., deleted entities, specific hud issues, slack channels), find concrete examples in the relevant database (Postgres/ClickHouse) to confirm the theory.
+          - **Run actual queries** to find at least one concrete example that proves or disproves your hypothesis. Do not assume — verify.
+          - If you cannot find data to support your theory, reconsider the root cause. 
+          - Answer these questions with data before finalizing the fix.
+          - Include the validation evidence gist (query results) in your suggested fix output.
+       
+       g. **Avoid Naive Suggestions**:
+          - Do NOT suggest adding retry mechanisms for timeout or connection errors. Instead, find WHY the timeout/connection issue occurs (slow query, resource exhaustion, upstream degradation) and fix that.
+          - Do NOT suggest "add caching" as a generic fix unless you have concrete evidence of repeated identical expensive calls AND can specify exactly what to cache, where, with what TTL, and what invalidation strategy. Vague "add a cache layer" suggestions are not actionable.
+          - Focus on root-cause fixes: query optimization, code logic changes, resource sizing, connection pool tuning, circuit breakers, or architectural changes.
+
+       h. **Output**: Return a concrete "Suggested Fix" with code changes if applicable.
+          - MUST include a "Validation Evidence" subsection showing the queries you ran and their results that confirm the root cause.
+          - If you could not validate the theory with data, explicitly state what you tried and why validation failed.
+
+    3. For RESOLVED insights — do NOT run sub-agents. Just copy them as-is.
+
+    4. Build the final output file: Copy the entire findings file, and for each ONGOING insight,
+       append a `### Suggested Fix` section right before the `---` separator with the sub-agent's result.
+
+    5. Write the enriched file to /tmp/analysis_findings.md using the Bash or Write tool.
+  </WORKFLOW>
+
+  <OUTPUT_SPEC>
+    The output file /tmp/analysis_findings.md must be identical to the input file,
+    except each ONGOING insight now has an additional section appended:
+
+    ### Suggested Fix
+    [Concrete, actionable fix with code changes if applicable]
+    ```[language]
+    // Before:
+    [problematic code]
+
+    // After:
+    [fixed code]
+    ```
+    [Explanation of why this fix works]
+
+    Keep all other sections exactly as they were in the input file.
+  </OUTPUT_SPEC>
+
+  <CRITICAL_RULES>
+    1. **READ FIRST**: You MUST read /tmp/analysis_findings.md before doing anything.
+    2. **SUB-AGENTS**: You MUST start a sub-agent for each ONGOING insight. Launch ALL sub-agents in PARALLEL (single tool-call batch). Do NOT run them sequentially.
+    3. **WRITE TO FILE**: You MUST write the enriched findings to /tmp/analysis_findings.md.
+    4. **PRESERVE STRUCTURE**: Keep all original sections intact. Only ADD the "Suggested Fix" section.
+    5. **CONCRETE FIXES**: Each fix must include actual code changes, not vague advice.
+    6. **NO NAIVE SUGGESTIONS**: Never suggest retry mechanisms for timeouts/connection errors or generic "add caching" without a fully specified caching strategy. These are band-aids, not fixes.
+    7. **DB VALIDATION**: If suggesting a query change, run EXPLAIN ANALYZE on both old and new queries.
+    8. After writing the file, confirm by printing a short summary (number of fixes generated).
+    9. **TIMEOUT**: If a sub-agent hasn't returned after 20 minutes, proceed without its result. Add a note: "Fix generation timed out" for that insight.
+    10. **DATA-BACKED VALIDATION (CRITICAL)**: Every suggested fix MUST include concrete data evidence. Before finalizing ANY fix, you MUST query the relevant database to find real examples that confirm your root cause theory. A fix without supporting data evidence is INCOMPLETE and UNACCEPTABLE. If the issue mentions specific entities, patterns, or data conditions — go find them in the DB and prove your theory is correct.
+  </CRITICAL_RULES>
+</PROMPT>
