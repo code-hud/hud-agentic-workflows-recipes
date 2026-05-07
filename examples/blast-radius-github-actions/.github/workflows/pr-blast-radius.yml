@@ -7,7 +7,8 @@ on:
   # the PR head ref here; the action below pulls the diff via the GitHub API instead.
   pull_request_target:
     branches: [main]
-    # paths: ['apps/**', 'src/**']    # uncomment to scope by path
+    # paths-ignore: ['docs/**', '*.md']   # optional: skip docs-only or config-only PRs
+    # paths: ['apps/**', 'src/**']        # alternative: only run on specific directories
   workflow_dispatch:
     inputs:
       pr_number:
