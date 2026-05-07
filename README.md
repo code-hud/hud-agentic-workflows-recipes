@@ -6,7 +6,7 @@ Production agentic workflows powered by [Hud](https://hud.io) runtime data. Pick
 
 Every workflow is a **use case** (what the agent does) running on a **runner** (where it executes). Any use case works on any runner.
 
-|  | [GitHub Actions](templates/github-actions/) | [gh-aw](templates/gh-aw/) | [Cursor](templates/cursor/) | [Claude routine](templates/claude-routine/) |
+|  | GitHub Actions ([Claude](templates/github-actions-claude/) · [Codex](templates/github-actions-codex/)) | [gh-aw](templates/gh-aw/) | [Cursor](templates/cursor/) | [Claude routine](templates/claude-routine/) |
 |---|:---:|:---:|:---:|:---:|
 | **[Blast radius](recipes/prompts/blast-radius.md)** | [**example**](examples/blast-radius-github-actions/) | combine | combine | combine |
 | **[Weekly report](recipes/prompts/weekly-report/)** | combine | [**example**](examples/weekly-report-gh-aw/) | combine | combine |
@@ -31,12 +31,11 @@ Pick a runner from [`templates/`](templates/), write your own prompt (or use [`r
 
 | Runner | Integration | What you do | Best for |
 |---|---|---|---|
-| **GitHub Actions** | Copy files | Copy `.github/` files to repo, set secrets. Ships with Claude Code CLI and Codex CLI actions; pick one. | PR-triggered workflows, cron jobs, teams already on GH Actions |
+| **GitHub Actions** | Copy files | Copy `.github/` files to repo, set secrets. Two templates: [Claude CLI](templates/github-actions-claude/) or [Codex CLI](templates/github-actions-codex/). | PR-triggered workflows, cron jobs, teams already on GH Actions |
 | **gh-aw** | Copy files | Copy `.github/workflows/*.md`, run `gh aw compile`, set secrets | Same triggers as GH Actions but with markdown+YAML agent format |
 | **Cursor** | Copy + UI | Copy `AGENTS.md` to repo, create automation in Cursor dashboard, add MCP servers, set secrets | Teams using Cursor, manual or scheduled triggers |
 | **Claude routine** | Copy file _or_ register | **Skill:** copy `.claude/skills/` to repo. **Scheduled:** register prompt via MCP tool call | On-demand (skill) or continuous cron monitoring (scheduled) |
 
-GitHub Actions ships with two CLI options (Claude Code and Codex). Pick one in the workflow file.
 
 ## How to combine
 
@@ -51,7 +50,8 @@ When the matrix says **combine**, you're pairing a prompt with a runner template
 
 ```
 templates/              Runner skeletons. How it runs.
-  github-actions/         Copy .github/ files to repo
+  github-actions-claude/  GitHub Actions + Claude Code CLI
+  github-actions-codex/   GitHub Actions + Codex CLI
   gh-aw/                  Copy .github/workflows/*.md to repo
   cursor/                 Copy AGENTS.md to repo + UI setup
   claude-routine/
