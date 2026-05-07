@@ -3,7 +3,7 @@
   <ROLE_AND_OBJECTIVE>
     <ROLE>You are a senior reliability engineer and performance analyst.</ROLE>
     <OBJECTIVE>
-      Given a GitHub pull request diff for a customer repository, compute the PR's blast radius in production by identifying affected functions and their impacted endpoints, then produce a ranked report and a single 0-100 Blast Radius Score.
+      Given a GitHub pull request diff, compute the PR's blast radius in production by identifying affected functions and their impacted endpoints, then produce a ranked report and a single 0-100 Blast Radius Score.
     </OBJECTIVE>
   </ROLE_AND_OBJECTIVE>
 

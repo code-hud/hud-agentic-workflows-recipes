@@ -61,7 +61,7 @@ The TS loader honors:
 | `HUD_TEAMS` | Comma-separated team keys to include (skip everything else) |
 | `HUD_SERVICES` | Comma-separated service names to include (filters within each team) |
 
-These slot in nicely with the workflow inputs in [`examples/weekly-report/`](../../../examples/weekly-report/).
+These slot in nicely with the workflow inputs in [`examples/weekly-report-gh-aw/`](../../../examples/weekly-report-gh-aw/).
 
 ## When it breaks
 

@@ -2,37 +2,57 @@
 
 Minimal Cursor Cloud Agent skeleton wired up with the Hud MCP server. Use this as a starting point when building a new agent that needs production runtime data.
 
+## How to install
+
+| Step | Action |
+|---|---|
+| **Copy to your repo** | `AGENTS.md` → repo root |
+| **Configure in UI** | 1. Go to [cursor.com/automations](https://cursor.com/automations) → Create automation → select your repo and branch |
+|  | 2. Go to [cursor.com/agents](https://cursor.com/agents) → MCP dropdown → add Hud MCP server (see [MCP config](#mcp-config) below) |
+|  | 3. Write your task prompt in the automation prompt field (or keep it minimal. the agent reads `AGENTS.md` from the repo automatically) |
+|  | 4. Pick an output. Open PR, Send Message, or None |
+|  | 5. Pick a trigger. schedule, GitHub event, Slack message, or manual |
+| **Set secrets** | `HUD_MCP_KEY`. add in Cursor workspace secrets (Hud dashboard → Settings → MCP keys) |
+
+## Where to put the prompt
+
+Open `AGENTS.md` and replace the `## Task` section with your task prompt. You can grab a ready-made prompt from [`recipes/prompts/`](../../recipes/prompts/) (e.g. `dead-code-cleanup.md`, `blast-radius.md`) or write your own. Cursor Cloud reads `AGENTS.md` from your repo root automatically.
+
 ## Files
 
 | Path | Purpose |
 |---|---|
-| `agent.md` | Specification + agent prompt — read it, configure Cursor per the Setup section, paste the Agent Prompt section into a new automation |
+| `AGENTS.md` | Agent instructions with your prompt. Copy to repo root. |
+| `README.md` | This install guide (not copied to your repo) |
 
-Cursor doesn't store agent prompts at a fixed repo path. This file is **documentation**, not a config file. Cursor agents are configured through the dashboard UI.
+## MCP config
 
-## Setup
+Add this in the Cursor dashboard MCP dropdown when configuring your cloud agent:
 
-1. Open `agent.md`. Read the Setup section.
-2. Configure the Hud MCP server in Cursor → Settings → MCP Servers.
-3. Add any extra MCPs (GitHub, Atlassian, Slack…) your task needs.
-4. Set automation-level environment variables for any tokens your shell commands use.
-5. Create a new Cursor Automation, paste the Agent Prompt section in, replace the `## Task` placeholder with your actual task.
-6. Pick an output — Open PR, Send Message, or None.
+**Hud MCP:**
 
-## Required config
+```json
+{
+  "mcpServers": {
+    "Hud-MCP": {
+      "command": "npx",
+      "args": ["-y", "hud-mcp@v2"],
+      "env": {
+        "HUD_MCP_KEY": "YOUR_HUD_MCP_KEY"
+      }
+    }
+  }
+}
+```
 
-| Item | Where | Notes |
-|---|---|---|
-| `HUD_MCP_KEY` | Hud MCP server config in Cursor | Hud dashboard → Settings → MCP keys |
-| Output sink | Cursor Automation output dropdown | Open PR / Send Message / None |
-| Extra MCPs | Cursor MCP config | Match to your task needs |
+Add other MCPs (GitHub, Atlassian, Slack, etc.) the same way if your task needs them.
 
 ## Common tweaks
 
 - **Multi-MCP tasks.** Add GitHub, Atlassian, Slack, or any other MCP via the same config pattern. The agent picks them up by tool name.
-- **Schedule.** Cursor's automation scheduler (when available) can fire this on a cron. Until then, trigger manually or via webhook.
-- **Output to PR.** Cursor's "Open Pull Request" output reads from your file changes — modify files in the sandbox and the platform creates the PR.
+- **Environment variables.** Add any tokens your shell commands need (e.g. `GITHUB_PERSONAL_ACCESS_TOKEN`) at the automation level. MCP env vars are only available to the MCP process, not your shell.
+- **Output to PR.** Select "Open Pull Request" as the automation output. the agent modifies files in the sandbox and Cursor creates the PR automatically.
 
 ## Reference examples
 
-- [Dead-code cleanup](../../examples/dead-code-cleanup/cursor/) — real Cursor automation with Hud + GitHub + Atlassian MCPs and PR + Jira output.
+- [Dead-code cleanup](../../examples/dead-code-cleanup-cursor/). real Cursor automation with Hud + GitHub + Atlassian MCPs and PR + Jira output.

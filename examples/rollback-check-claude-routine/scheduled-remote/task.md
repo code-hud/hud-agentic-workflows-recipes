@@ -34,7 +34,7 @@ The remote agent runs in an Anthropic-managed environment, but it still needs:
 1. **Hud MCP available** — the scheduled-task runner needs the hud MCP server registered with a valid `HUD_MCP_KEY` secret.
 2. **Output sink** — decide where verdicts go: Slack, PagerDuty, GitHub issue, custom webhook. The default prompt below returns a structured result; you'll need to wrap it with a delivery step (e.g. by chaining the scheduled task with an HTTP-call MCP).
 
-## Customer-specific values to confirm
+## Values to confirm
 
 The version-string examples in the Prompt below use a generic `release_v1.42.0` shape. If your service uses a different convention (`backend_release_<n.n.n>`, semver, git SHAs), adjust the example values in the YAML output schema — they're illustrative only and don't change the analysis logic.
 

@@ -37,6 +37,6 @@ PROCEDURE:
 RULES:
 - Do NOT delete or rewrite any existing content — only INSERT the **Contributors** lines.
 - Do NOT include raw emails or git usernames in the output — only `<@SLACK_ID>` tags.
-- If you cannot find the file in the repo (e.g., it's in a customer's codebase, not ours), skip that insight.
+- If you cannot find the file in the repo (e.g., it's in an external dependency), skip that insight.
 - If `/tmp/slack_email_map.json` is missing or empty, skip the Slack lookup and just add git author names as a fallback: `**Contributors:** Author Name, Author Name2`
 - Be efficient: don't blame files that aren't in this repository.

@@ -1,3 +1,8 @@
+<!-- Native runner: gh-aw. Works as-is on gh-aw (uses gh-aw frontmatter + multi-phase prompts).
+     Adapt for GitHub Actions: replace gh-aw frontmatter with workflow YAML, inline phase prompts.
+     Adapt for Cursor: remove frontmatter, consolidate phases into single AGENTS.md, use Cursor output.
+     Adapt for Claude routine: remove frontmatter, consolidate phases, use skill or scheduled-remote wrapper. -->
+
 ---
 description: |
   Weekly deep-insights report for Hud production.

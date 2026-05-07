@@ -1,3 +1,9 @@
+<!-- Native runner: Cursor. Works as-is on Cursor Cloud Agents.
+     Adapt for GitHub Actions: replace Cursor automation output with PR comment/step summary,
+       replace Atlassian MCP with CLI-based Jira calls or remove Jira integration.
+     Adapt for gh-aw: same as GitHub Actions, plus add gh-aw frontmatter.
+     Adapt for Claude routine: remove Cursor-specific output references, use interactive output. -->
+
 # Dead Code Cleaner — Cursor Cloud Agent
 
 This document is a **specification** for a Cursor Cloud Agent. To run it: configure the MCP servers below in Cursor's dashboard, then paste the prompt section into a new Cursor Automation.
@@ -56,7 +62,7 @@ Select **"Open Pull Request"** as the automation output. Uncheck "Draft" so PRs 
 
 Add `GITHUB_PERSONAL_ACCESS_TOKEN` as an automation-level environment variable (not just inside the MCP server config — MCP env is only available to the MCP process, not to shell commands).
 
-### 4. Customer-specific values to replace
+### 4. Values to replace
 
 This template uses `org-name` placeholders. Before running, search-and-replace:
 

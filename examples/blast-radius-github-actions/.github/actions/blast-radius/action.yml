@@ -71,11 +71,6 @@ inputs:
     required: false
     default: 'opus'
 
-  workspace-name:
-    description: 'Hud workspace name key (usually owner/repo)'
-    required: false
-    default: ${{ github.repository }}
-
   comment-on-pr:
     description: 'If true, posts the report as a PR comment'
     required: false
@@ -135,8 +130,7 @@ runs:
               "command": "npx",
               "args": ["-y", "hud-mcp@v2"],
               "env": {
-                "HUD_MCP_KEY": "${{ inputs.hud-mcp-key }}",
-                "WORKSPACE_NAME_KEY": "${{ inputs.workspace-name }}"
+                "HUD_MCP_KEY": "${{ inputs.hud-mcp-key }}"
               }
             }
           }

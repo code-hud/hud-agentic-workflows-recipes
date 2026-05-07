@@ -17,11 +17,6 @@ inputs:
     description: 'Model alias for Claude CLI (sonnet, opus, haiku, or full Bedrock model ID)'
     required: false
     default: 'sonnet'
-  workspace-name:
-    description: 'Hud workspace name key (usually owner/repo)'
-    required: false
-    default: ${{ github.repository }}
-
 runs:
   using: 'composite'
   steps:
@@ -43,8 +38,7 @@ runs:
               "command": "npx",
               "args": ["-y", "hud-mcp@v2"],
               "env": {
-                "HUD_MCP_KEY": "${{ inputs.hud-mcp-key }}",
-                "WORKSPACE_NAME_KEY": "${{ inputs.workspace-name }}"
+                "HUD_MCP_KEY": "${{ inputs.hud-mcp-key }}"
               }
             }
           }
