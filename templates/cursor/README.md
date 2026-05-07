@@ -12,7 +12,7 @@ Minimal Cursor Cloud Agent skeleton wired up with the Hud MCP server. Use this a
 |  | 3. Write your task prompt in the automation prompt field (or keep it minimal. the agent reads `AGENTS.md` from the repo automatically) |
 |  | 4. Pick an output. Open PR, Send Message, or None |
 |  | 5. Pick a trigger. schedule, GitHub event, Slack message, or manual |
-| **Set secrets** | `HUD_MCP_KEY`. add in Cursor workspace secrets (Hud dashboard → Settings → MCP keys) |
+| **Set secrets (Cursor workspace secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
 
 ## Where to put the prompt
 

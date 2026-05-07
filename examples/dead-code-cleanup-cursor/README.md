@@ -15,7 +15,7 @@ Most codebases accumulate dead code at the rate of feature work. This workflow u
 |  | 2. [cursor.com/agents](https://cursor.com/agents) → MCP dropdown → add Hud, GitHub, and Atlassian MCP servers (see [MCP config](#mcp-config)) |
 |  | 3. Set output → "Open Pull Request" (uncheck Draft) |
 |  | 4. Add `GITHUB_PERSONAL_ACCESS_TOKEN` as automation-level env var |
-| **Set secrets** | `HUD_MCP_KEY` - Hud dashboard → Settings → MCP keys |
+| **Set secrets (Cursor workspace secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
 |  | `GITHUB_PERSONAL_ACCESS_TOKEN` - PAT with org-wide `repo` scope |
 
 ## What it does

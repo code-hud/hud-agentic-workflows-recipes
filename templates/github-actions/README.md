@@ -11,9 +11,8 @@ The default composite action uses **Claude Code CLI**, but the pattern is CLI-ag
 | **Copy to your repo** | `.github/workflows/run-agent.yml` → same path |
 |  | `.github/actions/hud-claude/action.yml` → same path |
 |  | `.github/actions/hud-claude/prompt.txt` → same path |
-| **Configure in UI** | *(none)* |
-| **Set secrets** | `HUD_MCP_KEY`. Hud dashboard → Settings → MCP keys |
-|  | `ANTHROPIC_API_KEY`. console.anthropic.com (or [Bedrock](../../docs/auth.md)) |
+| **Set secrets (GitHub repo settings → Secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
+|  | `ANTHROPIC_API_KEY` - get from console.anthropic.com (or [Bedrock](../../docs/auth.md)) |
 
 ## Files
 

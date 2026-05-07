@@ -13,9 +13,8 @@ When a PR is opened, this workflow asks Hud "what does production look like for 
 | **Copy to your repo** | `.github/workflows/pr-blast-radius.yml` → same path |
 |  | `.github/actions/blast-radius/action.yml` → same path |
 |  | `.github/actions/blast-radius/blast-radius-prompt.txt` → same path |
-| **Configure in UI** | *(none)* |
-| **Set secrets** | `HUD_MCP_KEY` - Hud dashboard → Settings → MCP keys |
-|  | `ANTHROPIC_API_KEY` - console.anthropic.com (or [Bedrock](#bedrock-alternative)) |
+| **Set secrets (GitHub repo settings → Secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
+|  | `ANTHROPIC_API_KEY` - get from console.anthropic.com (or [Bedrock](#bedrock-alternative)) |
 
 ## What it does
 

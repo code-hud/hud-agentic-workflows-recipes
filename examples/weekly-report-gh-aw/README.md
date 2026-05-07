@@ -13,9 +13,8 @@ Every Monday morning the team gets a single Slack message: "here's what got wors
 | **Copy to your repo** | `.github/workflows/weekly-report.md` → same path |
 |  | `.github/workflows/deep-insights/*.txt` → same path (all 7 files) |
 | **Then run** | `gh aw compile` → commit generated `weekly-report.lock.yml` |
-| **Configure in UI** | *(none)* |
-| **Set secrets** | `HUD_MCP_KEY` - Hud dashboard → Settings → MCP keys |
-|  | `ANTHROPIC_API_KEY` - console.anthropic.com |
+| **Set secrets (GitHub repo settings → Secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
+|  | `ANTHROPIC_API_KEY` - get from console.anthropic.com |
 |  | `SLACK_BOT_TOKEN` - Slack app with `chat:write` + `users:read.email` scopes |
 |  | `SLACK_CHANNEL` - target Slack channel ID |
 

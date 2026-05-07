@@ -8,9 +8,8 @@ Minimal [gh-aw](https://github.com/githubnext/gh-aw) agent skeleton: Hud MCP + C
 |---|---|
 | **Copy to your repo** | `.github/workflows/agent.md` → same path |
 | **Then run** | `gh aw compile` → commit generated `agent.lock.yml` |
-| **Configure in UI** | *(none)* |
-| **Set secrets** | `HUD_MCP_KEY`. Hud dashboard → Settings → MCP keys |
-|  | `ANTHROPIC_API_KEY`. console.anthropic.com (or [Bedrock](../../docs/auth.md)) |
+| **Set secrets (GitHub repo settings → Secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
+|  | `ANTHROPIC_API_KEY` - get from console.anthropic.com (or [Bedrock](../../docs/auth.md)) |
 
 ## Files
 
