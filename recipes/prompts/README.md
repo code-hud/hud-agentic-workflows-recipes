@@ -4,28 +4,22 @@ Use-case prompts you can pair with any runner from [`../../templates/`](../../te
 
 ## What's in here
 
-| Prompt | What it does | Native runner |
-|---|---|---|
-| [`blast-radius.md`](blast-radius.md) | Score the blast radius of a PR (0–100) and write a markdown report | GitHub Actions |
-| [`weekly-report/`](weekly-report/) | Multi-phase weekly deep-insights report on production health, with optional self-heal PR | gh-aw |
-| [`dead-code-cleanup.md`](dead-code-cleanup.md) | Find functions with zero production traffic and propose deletions | Cursor |
-| [`rollback-check.md`](rollback-check.md) | Compare current vs. previous release health, return a structured verdict | Claude routine |
+| Prompt | What it does |
+|---|---|
+| [`blast-radius.md`](blast-radius.md) | Score the blast radius of a PR (0–100) and write a markdown report |
+| [`weekly-report/`](weekly-report/) | Multi-phase weekly deep-insights report on production health, with optional self-heal PR |
+| [`dead-code-cleanup.md`](dead-code-cleanup.md) | Find functions with zero production traffic and propose deletions |
+| [`rollback-check.md`](rollback-check.md) | Compare current vs. previous release health, return a structured verdict |
 
-Each prompt has an HTML comment at the top noting its native runner and what to change for other runners.
+Each prompt documents required environment variables and tools at the top. Prompts are runner-agnostic — they use env vars and generic instructions so you can pair them with any runner.
 
 ## How to use
 
 1. Pick a prompt above.
 2. Pick a runner from [`../../templates/`](../../templates/). gh-aw, GitHub Actions, Cursor, or Claude routine.
 3. Drop both into your repo at the runner's expected paths. See the runner's README for paths and required secrets.
-4. Set the `HUD_MCP_KEY` secret (and any others the runner needs. full list in [`../../docs/secrets.md`](../../docs/secrets.md)).
+4. Set the `HUD_MCP_KEY` secret (and any others the prompt and runner need).
 5. Ship a test run.
-
-## A note on runner coupling
-
-Some prompts contain runner-specific references by default. `dead-code-cleanup.md` mentions Cursor's "Open Pull Request" automation output, `rollback-check.md` is shaped as a Claude Code skill (with frontmatter), and `weekly-report/main.md` uses gh-aw frontmatter. **Each prompt works as-is on the runner it was originally paired with.**
-
-If you're using a different runner (say, the dead-code-cleanup prompt on GitHub Actions, or the weekly-report prompt on Cursor), the runner-specific bits need light adaptation. Easiest path: open the prompt and the runner template side-by-side and ask Claude (or your agent of choice) to adapt the prompt to the new runner's conventions.
 
 ## Mapping to fully worked examples
 
@@ -38,4 +32,4 @@ For each prompt here, there's a complete worked example (runner + prompt + insta
 | `dead-code-cleanup.md` | [`examples/dead-code-cleanup-cursor/`](../../examples/dead-code-cleanup-cursor/) |
 | `rollback-check.md` | [`examples/rollback-check-claude-routine/`](../../examples/rollback-check-claude-routine/) |
 
-The examples are install-ready. pick one if you want a working starting point and adapt from there.
+The examples are install-ready. Pick one if you want a working starting point and adapt from there.

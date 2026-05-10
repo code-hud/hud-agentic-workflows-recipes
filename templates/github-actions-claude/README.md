@@ -8,9 +8,10 @@ Minimal GitHub Actions skeleton wired up with Hud MCP and Claude Code CLI. Stand
 
 | Step | Action |
 |---|---|
-| **Copy to your repo** | `.github/workflows/run-agent.yml` → same path |
-|  | `.github/actions/hud-claude/action.yml` → same path |
-|  | `.github/actions/hud-claude/prompt.txt` → same path |
+| **Copy to your repo** | Copy these files into your repo, keeping the same paths: |
+|  | `.github/workflows/run-agent.yml` |
+|  | `.github/actions/hud-claude/action.yml` |
+|  | `.github/actions/hud-claude/prompt.txt` |
 | **Set secrets (GitHub repo settings → Secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
 |  | `ANTHROPIC_API_KEY` - get from console.anthropic.com (or [Bedrock](../../docs/auth.md)) |
 
@@ -19,6 +20,17 @@ Minimal GitHub Actions skeleton wired up with Hud MCP and Claude Code CLI. Stand
 Replace the contents of `.github/actions/hud-claude/prompt.txt` with your task prompt. You can grab a ready-made prompt from [`recipes/prompts/`](../../recipes/prompts/) (e.g. `blast-radius.md`, `dead-code-cleanup.md`) or write your own.
 
 Alternatively, pass an inline prompt via the `task_prompt` workflow input and leave `prompt.txt` as-is.
+
+### Complex prompts (multiple files, extra env vars)
+
+Prompts like `weekly-report/` need additional setup beyond replacing `prompt.txt`:
+
+1. **Check the prompt's env var table.** Add any required variables as `env:` in the workflow's agent step, and pass them through the composite action.
+2. **Copy supporting files.** If the prompt references files (e.g. `deep-insights/*.txt`), copy them into `.github/actions/hud-claude/` alongside `prompt.txt`, and set `PROMPT_DIR` to point there.
+3. **Add secrets.** If the prompt needs secrets beyond `HUD_MCP_KEY` and `ANTHROPIC_API_KEY`, add them as repo secrets and pass them as env vars.
+4. **Add triggers.** Uncomment or add the appropriate trigger (`schedule:`, `pull_request_target:`) in `run-agent.yml`.
+
+See the [blast radius example](../../examples/blast-radius-github-actions/) for a fully worked complex workflow.
 
 ## Files
 

@@ -1,83 +1,27 @@
-<!-- Native runner: Cursor. Works as-is on Cursor Cloud Agents.
-     Adapt for GitHub Actions: replace Cursor automation output with PR comment/step summary,
-       replace Atlassian MCP with CLI-based Jira calls or remove Jira integration.
-     Adapt for gh-aw: same as GitHub Actions, plus add gh-aw frontmatter.
-     Adapt for Claude routine: remove Cursor-specific output references, use interactive output. -->
+# Dead Code Cleaner
 
-# Dead Code Cleaner — Cursor Cloud Agent
+> Find functions with zero production invocations and remove them via PR.
 
-This document is a **specification** for a Cursor Cloud Agent. To run it: configure the MCP servers below in Cursor's dashboard, then paste the prompt section into a new Cursor Automation.
+## Required Environment Variables
 
----
-
-## Setup
-
-### 1. MCP servers
-
-Configure these in Cursor → Settings → MCP Servers:
-
-**Hud MCP** (custom):
-
-```json
-{
-  "mcpServers": {
-    "Hud-MCP": {
-      "command": "npx",
-      "args": ["-y", "hud-mcp@v2"],
-      "env": {
-        "HUD_MCP_KEY": "YOUR_HUD_MCP_KEY"
-      }
-    }
-  }
-}
-```
-
-**Atlassian MCP** — enable the built-in Atlassian integration for Jira access.
-
-**GitHub MCP** — custom, with a PAT that has org-wide `repo` scope. The PAT is also used by the service-discovery step to fetch the platform-inventory manifest via curl.
-
-```json
-{
-  "mcpServers": {
-    "github": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_PAT"
-      }
-    }
-  }
-}
-```
-
-### 2. Automation output
-
-Select **"Open Pull Request"** as the automation output. Uncheck "Draft" so PRs open as ready-for-review.
-
-### 3. Environment variables
-
-Add `GITHUB_PERSONAL_ACCESS_TOKEN` as an automation-level environment variable (not just inside the MCP server config — MCP env is only available to the MCP process, not to shell commands).
-
-### 4. Values to replace
-
-This template uses `org-name` placeholders. Before running, search-and-replace:
-
-| Placeholder | Replace with |
+| Variable | Purpose |
 |---|---|
-| `org-name` | Your GitHub org slug |
-| `dimensions/org-name` | Your service-inventory path |
-| `org-name.atlassian.net` | Your Jira host |
-| `ORG` (Jira project key) | Your Jira project key |
+| `SERVICE_NAMES` | Comma-separated service names to scan (e.g. `my-api,my-worker`). If not set, the agent must discover services — see Service Discovery. |
+| `JIRA_PROJECT_KEY` | Jira project key for ticket creation (optional — skip Jira integration if unset) |
+| `JIRA_HOST` | Jira host (e.g. `myorg.atlassian.net`) (optional — only needed if `JIRA_PROJECT_KEY` is set) |
+| `LOOKBACK_DAYS` | How far back to check invocations (default: `60`) |
+| `BASE_BRANCH` | Branch to base PRs on (default: `main`) |
+| `MAX_LINES_CHANGED` | Max PR diff size (default: `300`) |
+
+## Required Tools
+
+- **Hud MCP** — SQL query interface for production runtime data.
+- **GitHub MCP or gh CLI** — for PR deduplication checks and labeling. The agent should use whichever is available.
+- **Atlassian MCP** — for Jira integration (optional, only if `JIRA_PROJECT_KEY` is set).
 
 ---
 
 ## Agent Prompt
-
-> Paste everything below into the Cursor Automation prompt field.
 
 ### Role and objective
 
@@ -85,81 +29,60 @@ You are a senior code quality engineer specializing in production runtime analys
 
 Your task: identify dead code (functions with zero production invocations) in this repository using Hud's runtime intelligence, then:
 
-1. Open a Jira ticket tracking the cleanup — only if no open ticket already exists.
-2. Remove the dead code from the codebase so the automation output creates a PR.
+1. Open a Jira ticket tracking the cleanup — only if `JIRA_PROJECT_KEY` is set and no open ticket already exists.
+2. Remove the dead code and create a PR.
 
-Use the Hud MCP (`@hud`) to query production invocation data. Use the Atlassian MCP for Jira. Use the GitHub MCP to check for existing PRs and add labels. Modify files directly — the Cursor Automation "Open Pull Request" output will create the PR from your changes automatically.
+Use the Hud MCP to query production invocation data. Use Atlassian MCP for Jira (if configured). Use GitHub MCP or gh CLI for PR operations.
 
 ### Inputs
 
-Fixed values:
+Configuration (from environment variables, with defaults):
 
-- `JIRA_PROJECT_KEY`: `ORG`
-- `LOOKBACK_DAYS`: `60`
-- `BASE_BRANCH`: `master`
-- `MAX_LINES_CHANGED`: `300`
+- `LOOKBACK_DAYS`: `60` (override via env var)
+- `BASE_BRANCH`: `main` (override via env var)
+- `MAX_LINES_CHANGED`: `300` (override via env var)
+- `JIRA_PROJECT_KEY`: unset by default (set to enable Jira integration)
 
 Derived values:
 
-- `REPO_NAME` — infer from the repository this automation is running against.
-- `SERVICE_NAMES` — discovered dynamically from the platform-inventory manifest for this repo (see Service Discovery). This is a list — query Hud for each service identity.
+- `REPO_NAME` — infer from the repository context.
+- `ORG_NAME` — infer from the repository context (GitHub org or owner).
+- `SERVICE_NAMES` — from the `SERVICE_NAMES` env var, or discovered dynamically (see Service Discovery).
 
 ### Service discovery
 
-`SERVICE_NAMES` must be resolved from the platform-inventory manifest before running dead-code queries.
+If `SERVICE_NAMES` is set, split on commas and use directly. Skip this section.
 
-The manifest file is `{REPO_NAME}:manifest.json`, located at `dimensions/org-name/entity/{REPO_NAME}:manifest.json` in the GitHub repo `org-name/platform-inventory` (branch: `master`).
+If `SERVICE_NAMES` is not set, the agent must discover which services map to this repository. Common approaches:
 
-**Important:** the GitHub MCP is scoped to the triggering repo and cannot access platform-inventory. Use a direct shell `curl` to the GitHub API instead.
+1. **Hud query** — query the `Functions` table for distinct service names associated with files in this repo.
+2. **Manifest file** — if the org maintains a service registry or platform-inventory, fetch the manifest for this repo and extract service identities.
+3. **Convention** — if the repo name matches the service name, use it directly.
 
-The `GITHUB_PERSONAL_ACCESS_TOKEN` env var must be set as an automation-level env var (not only inside the MCP server config).
+The agent should try approach 1 first:
 
-**Step 1 — Fetch the manifest:**
-
-```bash
-curl -sf \
-  -H "Authorization: token $GITHUB_PERSONAL_ACCESS_TOKEN" \
-  -H "Accept: application/vnd.github.v3.raw" \
-  "https://api.github.com/repos/org-name/platform-inventory/contents/dimensions/org-name/entity/${REPO_NAME}%3Amanifest.json?ref=master"
+```sql
+SELECT DISTINCT arrayJoin(arrayMap(x -> x.2, services)) AS service_name
+FROM Functions
+WHERE file NOT LIKE '%node_modules%'
+  AND file NOT LIKE '%/dist/%'
+  AND third_party = ''
+LIMIT 50
 ```
 
-The colon in the filename must be URL-encoded as `%3A`. The `v3.raw` Accept header returns the raw JSON content directly.
+Then filter to services that have files matching the repo's source structure.
 
-If `$GITHUB_PERSONAL_ACCESS_TOKEN` is not available, check `$GH_TOKEN` and `$GITHUB_TOKEN`.
+If discovery fails or returns no results, STOP with: "Could not determine service names. Set the SERVICE_NAMES environment variable." Make no file changes.
 
-**Step 2 — Extract all service identities:**
-
-Parse the returned JSON and collect the `identity` field from every workload array: `services`, `workers`, `kConsumers`, `temporalWorkers`, `schedulers`, `ssrs`.
-
-```bash
-echo '$MANIFEST_JSON' | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-ids = set()
-for key in ['services','workers','kConsumers','temporalWorkers','schedulers','ssrs']:
-    for item in data.get(key, []):
-        if item.get('identity'):
-            ids.add(item['identity'])
-for i in sorted(ids):
-    print(i)
-"
-```
-
-**Step 3 — Validate:**
-
-- If the curl returns an HTTP error, STOP with: "Cannot fetch manifest for {REPO_NAME} from platform-inventory. HTTP response: {error}. Check `GITHUB_PERSONAL_ACCESS_TOKEN` permissions." Make no file changes.
-- If the manifest has no workload arrays or all are empty, STOP with: "No service identities found in manifest for {REPO_NAME}." Make no file changes.
-- Log the resolved `SERVICE_NAMES` list before proceeding.
+Log the resolved service names before proceeding.
 
 ### Available tools
 
-**Hud MCP (`@hud`)** — SQL query interface. Tables: `Functions`, `FunctionMetricsLowResolution`, `Endpoints`, `EndpointMetricsLowResolution`.
+**Hud MCP** — SQL query interface. Tables: `Functions`, `FunctionMetricsLowResolution`, `Endpoints`, `EndpointMetricsLowResolution`.
 
-**Atlassian MCP (Jira)** — `searchJiraIssuesUsingJql`, `createJiraIssue`, `editJiraIssue`, `addCommentToJiraIssue`, `getJiraIssue`, `getJiraProjectIssueTypesMetadata`.
+**Atlassian MCP (Jira)** — `searchJiraIssuesUsingJql`, `createJiraIssue`, `editJiraIssue`, `addCommentToJiraIssue`, `getJiraIssue`, `getJiraProjectIssueTypesMetadata`. Only use if `JIRA_PROJECT_KEY` is set.
 
-**GitHub MCP** — `search_pull_requests`, `issue_write` (used to add labels — PRs are issues in the GitHub API), `list_pull_requests`.
-
-**Cursor Automation Output** — "Open Pull Request" automatically creates a PR from all file changes. PR title and description come from your final output. File modifications happen locally in the sandbox.
+**GitHub MCP or gh CLI** — for searching existing PRs, adding labels. Use whichever is available in the environment.
 
 ### Rules (non-negotiable)
 
@@ -286,16 +209,13 @@ After file-existence filter, if zero candidates remain:
 
 **Check 1 (FIRST) — existing open PR with HUD label:**
 
-```
-Tool: search_pull_requests (GitHub MCP)
-Query: repo:org-name/{REPO_NAME} is:open label:HUD
-```
+Search for open PRs in this repo with the `HUD` label.
 
 If found:
 - Output: "Open PR with HUD label already exists: {PR_URL}. Skipping."
 - STOP immediately. No Jira ticket. No Hud queries. No file changes.
 
-**Check 2 — existing Jira ticket:**
+**Check 2 — existing Jira ticket** (only if `JIRA_PROJECT_KEY` is set):
 
 ```
 Tool: searchJiraIssuesUsingJql (Atlassian MCP)
@@ -322,6 +242,8 @@ For each skipped function, record the skip reason.
 **Report filtering:** do NOT include skipped functions in the Jira ticket or PR description if their skip reason is `event handler or callback registration` or `framework hook/decorator handler` — these are expected noise.
 
 ### Jira ticket creation
+
+**Skip this section entirely if `JIRA_PROJECT_KEY` is not set.**
 
 Only create a ticket if dead code is actually being removed. If no existing ticket was found:
 
@@ -378,24 +300,9 @@ For each function that passed safety checks:
 - If a removal would break callers, trace the chain: if the caller is also dead in Hud, include it in the deletion. Repeat recursively. Stop when reaching a live function, public API export, framework hook, or other safety match. If the entire chain up to entry point is dead, delete it all. If the chain leads to a live caller that can't be removed, REVERT the original removal and add it to skipped with reason "removal would break dependent code — live caller in chain."
 - Track cumulative lines changed. If exceeding `MAX_LINES_CHANGED` (300), stop. Remaining candidates → skipped with reason "PR line limit reached."
 
-**Phase 3 — Add HUD label to the PR:**
+**Phase 3 — Create PR:**
 
-After the automation creates the PR:
-
-```
-Tool: issue_write (GitHub MCP)
-method:       update
-owner:        org-name
-repo:         {REPO_NAME}
-issue_number: {PR_NUMBER}
-labels:       ["HUD"]
-```
-
-If the label doesn't exist, GitHub creates it.
-
-### PR output
-
-Structure your final output so the automation creates a PR with:
+Create a PR with the `HUD` label targeting `BASE_BRANCH`.
 
 **Title:** `[HUD] chore: remove dead code ({N} functions) — {REPO_NAME}`
 
@@ -410,7 +317,7 @@ Structure your final output so the automation creates a PR with:
 - Services: {SERVICE_NAMES joined by ', ' — wrapped in backticks each}
 
 {IF JIRA_TICKET_KEY exists}
-**Jira:** [{JIRA_TICKET_KEY}](https://org-name.atlassian.net/browse/{JIRA_TICKET_KEY})
+**Jira:** [{JIRA_TICKET_KEY}](https://{JIRA_HOST}/browse/{JIRA_TICKET_KEY})
 {END IF}
 
 ---
@@ -454,23 +361,22 @@ _This PR was auto-generated by the Dead Code Cleaner automation._
 
 ### Error handling
 
-- Manifest fetch fails or no services found → STOP with the corresponding error. Make no file changes.
+- Service discovery fails or no services found → STOP with the corresponding error. Make no file changes.
 - Hud query fails or times out → retry once. Fail again → stop with: "Hud query failed: {error_message}. Automation aborted." No file changes.
 - Jira ticket creation fails → log the error, continue with code cleanup. Note the failure in the PR description.
 - Local file unreadable during cleanup → skip that function with reason "file access error."
 
 ### Execution order
 
-1. Derive `REPO_NAME` from the triggering repo.
+1. Derive `REPO_NAME` and `ORG_NAME` from the repository context.
 2. Check for existing open PR with `HUD` label (Deduplication Check 1). If found → STOP.
-3. Discover `SERVICE_NAMES` from the platform-inventory manifest. If fetch fails or no services → STOP.
+3. Resolve `SERVICE_NAMES` (from env var or discovery). If none found → STOP.
 4. Query Hud for dead functions (Hud Query Playbook).
 5. Filter candidates by file existence in the checkout.
 6. Early exit if no candidates remain.
 7. Run safety checks on remaining candidates.
 8. If all skipped → STOP with no file changes and no Jira ticket.
 9. Remove dead code (Code Cleanup Workflow Phases 1-2).
-10. Check for existing Jira ticket (Deduplication Check 2).
+10. Check for existing Jira ticket (Deduplication Check 2) — only if `JIRA_PROJECT_KEY` is set.
 11. Create Jira ticket if needed — only because code IS being removed.
-12. Output PR title, description, and summary. The automation creates the PR. PR must NOT be a draft.
-13. Add `HUD` label to the new PR (Code Cleanup Workflow Phase 3).
+12. Create PR with title, description, and `HUD` label (Phase 3).

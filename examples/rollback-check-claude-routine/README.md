@@ -10,7 +10,7 @@ After a deploy, the question every SRE asks is "should I roll this back?" This r
 
 | Variant | Step | Action |
 |---|---|---|
-| **Skill** | **Copy to your repo** | `.claude/skills/rollback-check/SKILL.md` → same path |
+| **Skill** | **Copy to your repo** | Copy `.claude/skills/rollback-check/SKILL.md` into your repo at the same path |
 |  | **Configure locally** | Register Hud MCP: `claude mcp add -e HUD_MCP_KEY=$HUD_MCP_KEY --scope user --transport stdio hud -- npx -y hud-mcp@v2` |
 |  | **Invoke** | In a Claude Code session, type `/rollback-check` |
 | **Scheduled remote** | **Copy to your repo** | *(nothing - no files)* |
@@ -46,6 +46,7 @@ Both prompts share the same analysis logic. If you change it, edit both files to
 
 ## Adapting it
 
+- **Different runner?** This example is Claude routine-specific. For a runner-agnostic version of the prompt (GitHub Actions, gh-aw, Cursor), see [`recipes/prompts/rollback-check.md`](../../recipes/prompts/rollback-check.md).
 - **Different version-tag convention?** The version-discovery query reads `session_tags['service_version']`. Replace with whatever tag your services emit (e.g. `git_sha`, `release_id`).
 - **No deployment events in Hud?** The workflow falls back to traffic-based ownership and time-based cohorts. No config changes needed.
 - **Different verdict thresholds?** Edit the Step 5 decision matrix. The `Agent override` section already permits escalation outside the numeric thresholds when patterns warrant it.

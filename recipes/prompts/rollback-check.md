@@ -1,14 +1,6 @@
-<!-- Native runner: Claude routine (skill). Works as-is on Claude Code skills and scheduled remote.
-     Adapt for GitHub Actions: remove skill frontmatter, add workflow YAML wrapper, output as step summary.
-     Adapt for Cursor: remove frontmatter, use Cursor automation output.
-     Adapt for gh-aw: remove frontmatter, add gh-aw frontmatter instead. -->
-
----
-name: rollback-check
-description: Use when deciding whether to roll back a recent deployment. Analyzes per-version production health using Hud — error rates, fingerprints, latency percentiles, function-level change attribution — to recommend ROLLBACK / INVESTIGATE / WARN / CLEAN.
----
-
 # Deployment Rollback Check
+
+> Analyze a recent deployment for regressions and recommend ROLLBACK / INVESTIGATE / WARN / CLEAN.
 
 Analyze a service deployment for critical regressions and determine whether to recommend a rollback. Uses per-version analysis so multiple concurrently running versions are evaluated independently, with newest-wins endpoint ownership and function-level change attribution when regressions are found.
 

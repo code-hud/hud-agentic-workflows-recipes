@@ -10,9 +10,10 @@ When a PR is opened, this workflow asks Hud "what does production look like for 
 
 | Step | Action |
 |---|---|
-| **Copy to your repo** | `.github/workflows/pr-blast-radius.yml` → same path |
-|  | `.github/actions/blast-radius/action.yml` → same path |
-|  | `.github/actions/blast-radius/blast-radius-prompt.txt` → same path |
+| **Copy to your repo** | Copy these files into your repo, keeping the same paths: |
+|  | `.github/workflows/pr-blast-radius.yml` |
+|  | `.github/actions/blast-radius/action.yml` |
+|  | `.github/actions/blast-radius/blast-radius-prompt.txt` |
 | **Set secrets (GitHub repo settings → Secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
 |  | `ANTHROPIC_API_KEY` - get from console.anthropic.com (or [Bedrock](#bedrock-alternative)) |
 

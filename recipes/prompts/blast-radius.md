@@ -1,7 +1,3 @@
-<!-- Native runner: GitHub Actions. Works as-is on GitHub Actions and gh-aw (same trigger model).
-     Adapt for Cursor: change PR-comment output to Cursor automation output.
-     Adapt for Claude routine: remove CI-specific env vars, use interactive output. -->
-
 <PROMPT>
 
   <ROLE_AND_OBJECTIVE>

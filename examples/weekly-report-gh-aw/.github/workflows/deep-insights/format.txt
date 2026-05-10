@@ -50,7 +50,8 @@ For EACH insight, include ALL of these blocks (3 blocks per insight):
        - Button 2: "Open Jira Ticket"
          - type: "button"
          - text: "Open Jira Ticket"
-         - url: `https://org-name.atlassian.net/secure/CreateIssueDetails!init.jspa?pid=ORG&issuetype=10369&priority=3&summary={ENCODED_SUMMARY}&description={ENCODED_DESCRIPTION}&labels=Hud`
+         - url: `https://{JIRA_HOST}/secure/CreateIssueDetails!init.jspa?pid={JIRA_PROJECT_KEY}&issuetype=10369&priority=3&summary={ENCODED_SUMMARY}&description={ENCODED_DESCRIPTION}&labels=Hud`
+         - NOTE: If JIRA_HOST or JIRA_PROJECT_KEY env vars are not set, omit this button entirely.
          - style: "primary"
          - ENCODED_SUMMARY: URL-encoded title (e.g., "Fix {Insight Category} in {Service}")
          - ENCODED_DESCRIPTION: URL-encoded Jira description using this format:

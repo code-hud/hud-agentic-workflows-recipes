@@ -108,6 +108,7 @@ Also confirm the fixed-value inputs in `AGENTS.md` match your conventions:
 
 ## Adapting it
 
-- **No platform-inventory manifest?** Hardcode `SERVICE_NAMES` in `AGENTS.md`, or read from `package.json` per-service folder (see [`recipes/team-splitting/3-package-json/`](../../recipes/team-splitting/3-package-json/)), or use a static config file (see [`recipes/team-splitting/1-config-file/`](../../recipes/team-splitting/1-config-file/)).
+- **Different runner?** This example is Cursor-specific. For a runner-agnostic version of the prompt (GitHub Actions, gh-aw, Claude routine), see [`recipes/prompts/dead-code-cleanup.md`](../../recipes/prompts/dead-code-cleanup.md).
+- **No platform-inventory manifest?** Set `SERVICE_NAMES` as an env var, or use the generic prompt's auto-discovery via Hud query.
 - **No Jira?** Strip the Jira section from `AGENTS.md`; the workflow still works PR-only.
 - **Different `LOOKBACK_DAYS`?** 60 is the default; some teams prefer 90 to avoid catching seasonal code.

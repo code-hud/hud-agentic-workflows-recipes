@@ -84,7 +84,6 @@ Get the key: [hud.io](https://hud.io) → Settings → MCP keys.
 | Topic | Doc |
 |---|---|
 | Anthropic vs Bedrock model auth | [`docs/auth.md`](docs/auth.md) |
-| Per-example secrets checklist | [`docs/secrets.md`](docs/secrets.md) |
 
 ## Contributing
 

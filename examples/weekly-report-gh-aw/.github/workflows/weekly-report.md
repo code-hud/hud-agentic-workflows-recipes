@@ -76,6 +76,10 @@ safe-outputs:
     labels: [self-heal]
 
 env:
+  PROMPT_DIR: ".github/workflows"
+  INVESTIGATION_MODE: "${{ github.event.inputs.investigation_mode || 'weekly' }}"
+  ADDITIONAL_CONTEXT: "${{ github.event.inputs.additional_context }}"
+  SELF_HEAL: "${{ github.event.inputs.open_pr || 'true' }}"
   SLACK_BOT_TOKEN: "${{ secrets.SLACK_BOT_TOKEN }}"
   SLACK_CHANNEL: "${{ github.event.inputs.slack_channel || secrets.SLACK_CHANNEL }}"
   HUD_SERVICES: "${{ github.event.inputs.services }}"
@@ -96,17 +100,19 @@ steps:
 
 # Weekly Hud Report
 
+> Analyze production regressions, generate fixes, annotate contributors, and deliver a Slack report.
+
 ## Job Description
 
 You are an AI performance and reliability engineer for `${{ github.repository }}`.
 Your task: generate a weekly deep-insights report analyzing production data, propose fixes for ongoing issues, annotate contributors, apply quality gates, optionally self-heal the most impactful issue, and deliver the report to Slack.
 
 **Parameters for this run:**
-- **Investigation mode:** `${{ github.event.inputs.investigation_mode }}` (default: weekly)
-- **Slack channel:** `$SLACK_CHANNEL` (input override or `SLACK_CHANNEL` secret)
-- **Services filter:** `${{ github.event.inputs.services }}` (empty = all services)
-- **Additional context:** `${{ github.event.inputs.additional_context }}`
-- **Self-heal enabled:** `${{ github.event.inputs.open_pr }}` (default: true)
+- **Investigation mode:** `$INVESTIGATION_MODE` (default: weekly)
+- **Slack channel:** `$SLACK_CHANNEL`
+- **Services filter:** `$HUD_SERVICES` (empty = all services)
+- **Additional context:** `$ADDITIONAL_CONTEXT`
+- **Self-heal enabled:** `$SELF_HEAL` (default: true)
 
 Execute the following phases **sequentially**. Each phase has a detailed prompt file — read it and follow its instructions precisely.
 
@@ -117,14 +123,14 @@ Execute the following phases **sequentially**. Each phase has a detailed prompt 
 **Goal:** Analyze Hud production data and write findings to `/tmp/analysis_findings.md`.
 
 1. Determine which prompt file to use:
-   - If investigation mode is `audit`: read `.github/workflows/deep-insights/health-audit.txt`
-   - Otherwise: read `.github/workflows/deep-insights/investigate.txt`
+   - If investigation mode is `audit`: read `$PROMPT_DIR/deep-insights/health-audit.txt`
+   - Otherwise: read `$PROMPT_DIR/deep-insights/investigate.txt`
 
 2. Read the selected prompt file in its entirety.
 
 3. **Services filter:** If `$HUD_SERVICES` is non-empty, scope ALL queries to only those service names (comma-separated). Do not include data from any other service.
 
-4. If additional context was provided above (not "(none)"), incorporate it into your analysis.
+4. If additional context was provided above, incorporate it into your analysis.
 
 5. Follow ALL instructions in the prompt file. Use the **hud-mcp** MCP server for all data queries (metrics, forensics, metadata).
 
@@ -140,9 +146,9 @@ Execute the following phases **sequentially**. Each phase has a detailed prompt 
 
 **Goal:** For each ONGOING insight, generate a concrete suggested fix.
 
-1. Read `.github/workflows/deep-insights/solutions.txt` in its entirety.
+1. Read `$PROMPT_DIR/deep-insights/solutions.txt` in its entirety.
 
-2. Follow its instructions: read `/tmp/analysis_findings.md`, then for each ONGOING insight, investigate the root cause and generate a fix. Launch sub-agents in parallel for each ONGOING insight.
+2. Follow its instructions: read `/tmp/analysis_findings.md`, then for each ONGOING insight, investigate the root cause and generate a fix.
 
 3. Write the enriched findings (with `### Suggested Fix` sections) back to `/tmp/analysis_findings.md`.
 
@@ -204,7 +210,7 @@ PY
 
 ### Step 3b: Annotate findings with blame context
 
-1. Read `.github/workflows/deep-insights/blame.txt` in its entirety.
+1. Read `$PROMPT_DIR/deep-insights/blame.txt` in its entirety.
 
 2. Follow its instructions to annotate `/tmp/analysis_findings.md` with `**Contributors:** <@SLACK_ID>` lines using git blame and the Slack map at `/tmp/slack_email_map.json`.
 
@@ -214,7 +220,7 @@ PY
 
 **Goal:** Remove redundancy, enforce quality gates, and polish the findings.
 
-1. Read `.github/workflows/deep-insights/deslop.txt` in its entirety.
+1. Read `$PROMPT_DIR/deep-insights/deslop.txt` in its entirety.
 
 2. Follow its instructions to clean up `/tmp/analysis_findings.md`: apply quality gates, merge duplicates, enforce limits, fix formatting.
 
@@ -226,9 +232,9 @@ PY
 
 **Goal:** Select the best fix and apply it as a draft PR.
 
-**Skip this phase entirely** if self-heal is disabled (the parameter above says `false`).
+**Skip this phase entirely** if self-heal is disabled (`$SELF_HEAL` is `false`).
 
-1. Read `.github/workflows/deep-insights/self-heal.txt` in its entirety.
+1. Read `$PROMPT_DIR/deep-insights/self-heal.txt` in its entirety.
 
 2. Follow the **scoring** and **fix selection** instructions (Phases 1-4 of self-heal.txt).
 
@@ -246,7 +252,7 @@ PY
 
 ### Step 6a: Format as Slack JSON
 
-1. Read `.github/workflows/deep-insights/format.txt` in its entirety.
+1. Read `$PROMPT_DIR/deep-insights/format.txt` in its entirety.
 
 2. Read `/tmp/analysis_findings.md`.
 

@@ -8,9 +8,10 @@ Minimal GitHub Actions skeleton wired up with Hud MCP and OpenAI Codex CLI. Stan
 
 | Step | Action |
 |---|---|
-| **Copy to your repo** | `.github/workflows/run-agent.yml` → same path |
-|  | `.github/actions/hud-codex/action.yml` → same path |
-|  | `.github/actions/hud-codex/prompt.txt` → same path |
+| **Copy to your repo** | Copy these files into your repo, keeping the same paths: |
+|  | `.github/workflows/run-agent.yml` |
+|  | `.github/actions/hud-codex/action.yml` |
+|  | `.github/actions/hud-codex/prompt.txt` |
 | **Set secrets (GitHub repo settings → Secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
 |  | `OPENAI_API_KEY` - get from platform.openai.com |
 

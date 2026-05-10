@@ -6,7 +6,7 @@ Two flavors of "Claude with Hud, no specific task". pick based on how you want t
 
 | Variant | Step | Action |
 |---|---|---|
-| **Skill** | **Copy to your repo** | `.claude/skills/hud-agent/SKILL.md` → same path |
+| **Skill** | **Copy to your repo** | Copy `.claude/skills/hud-agent/SKILL.md` into your repo at the same path |
 |  | **Configure locally** | Register Hud MCP: `claude mcp add -e HUD_MCP_KEY=$HUD_MCP_KEY --scope user --transport stdio hud -- npx -y hud-mcp@v2` |
 |  | **Invoke** | In a Claude Code session, type `/hud-agent` |
 | **Scheduled remote** | **Copy to your repo** | *(nothing. no files)* |

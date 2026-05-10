@@ -13,7 +13,7 @@ Thanks for contributing. Every leaf folder should make sense on its own, even wh
 
    | Step | Action |
    |---|---|
-   | **Copy to your repo** | `path/to/file` → same path |
+   | **Copy to your repo** | Copy `path/to/file` into your repo at the same path |
    | **Configure in UI** | *(none)* or numbered steps |
    | **Set secrets** | `SECRET_NAME` (where to get it) |
    ```

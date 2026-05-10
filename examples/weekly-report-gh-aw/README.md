@@ -10,8 +10,9 @@ Every Monday morning the team gets a single Slack message: "here's what got wors
 
 | Step | Action |
 |---|---|
-| **Copy to your repo** | `.github/workflows/weekly-report.md` → same path |
-|  | `.github/workflows/deep-insights/*.txt` → same path (all 7 files) |
+| **Copy to your repo** | Copy these files into your repo, keeping the same paths: |
+|  | `.github/workflows/weekly-report.md` |
+|  | `.github/workflows/deep-insights/*.txt` (all 7 files) |
 | **Then run** | `gh aw compile` → commit generated `weekly-report.lock.yml` |
 | **Set secrets (GitHub repo settings → Secrets)** | `HUD_MCP_KEY` - get from Hud dashboard → Settings → MCP keys |
 |  | `ANTHROPIC_API_KEY` - get from console.anthropic.com |
