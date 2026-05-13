@@ -1,0 +1,42 @@
+name: Hud Agent (Claude)
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_prompt:
+        description: 'Task prompt for the agent (or leave blank to use the file at .github/actions/hud-claude/prompt.txt)'
+        required: false
+        type: string
+  # Uncomment one of these triggers to run automatically:
+  #
+  # pull_request_target:
+  #   branches: [main]
+  #
+  # schedule:
+  #   - cron: '0 14 * * MON'
+
+permissions:
+  contents: read
+  pull-requests: write
+  # id-token: write    # add ONLY for AWS Bedrock (AWS OIDC)
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # If using Bedrock, uncomment:
+      # - uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      #     aws-region: us-west-2
+
+      - uses: ./.github/actions/hud-claude
+        with:
+          hud-mcp-key: ${{ secrets.HUD_MCP_KEY }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          task-prompt: ${{ github.event.inputs.task_prompt }}
+          # model: 'sonnet'

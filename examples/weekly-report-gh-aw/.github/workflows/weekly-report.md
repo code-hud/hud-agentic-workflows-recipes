@@ -1,28 +1,110 @@
+---
+description: |
+  Weekly deep-insights report for Hud production.
+  Analyzes week-over-week performance and error regressions using the hud-mcp
+  MCP server, generates actionable fixes, annotates contributors via git blame
+  + Slack lookup, applies quality gates, optionally self-heals the best fix as
+  a draft PR, formats a Slack Block Kit message, and posts it to a channel.
+
+name: gh-aw-hud report
+
+on:
+  workflow_dispatch:
+    inputs:
+      investigation_mode:
+        description: '"weekly" (default) for week-over-week, or "audit" for absolute health check'
+        required: false
+        default: 'weekly'
+        type: choice
+        options:
+          - weekly
+          - audit
+      additional_context:
+        description: 'Additional context to append to the analysis prompt (optional)'
+        required: false
+        type: string
+      slack_channel:
+        description: 'Slack channel to send the report to (overrides SLACK_CHANNEL secret)'
+        required: false
+        type: string
+      services:
+        description: 'Comma-separated service names to scope the analysis (e.g. my-api,my-worker). Leave empty to analyze all services.'
+        required: false
+        type: string
+      open_pr:
+        description: 'Run self-heal step and open a PR with fixes'
+        required: false
+        default: true
+        type: boolean
+
+engine: claude
+strict: false
+timeout-minutes: 90
+
+permissions:
+  contents: read
+  pull-requests: read       # `safe-outputs.create-pull-request` (below) elevates this internally — no `write` needed here
+  # id-token: write    # add ONLY for AWS Bedrock (AWS OIDC, not Hud)
+
+network:
+  allowed:
+    - defaults
+    - node
+    - github
+    - "api.hud.io"
+    - "cdn.hud.io"
+    - "api.slack.com"
+    - "slack.com"
+
+tools:
+  edit:
+  bash: [":*"]
+  github:
+    toolsets: [repos, pull_requests]
+  web-fetch:
+
+mcp-servers:
+  hud-mcp:
+    command: "npx"
+    args: ["-y", "hud-mcp@v2"]
+    env:
+      HUD_MCP_KEY: "${{ secrets.HUD_MCP_KEY }}"
+
+safe-outputs:
+  create-pull-request:
+    draft: true
+    labels: [self-heal]
+
+env:
+  PROMPT_DIR: ".github/workflows"
+  INVESTIGATION_MODE: "${{ github.event.inputs.investigation_mode || 'weekly' }}"
+  ADDITIONAL_CONTEXT: "${{ github.event.inputs.additional_context }}"
+  SELF_HEAL: "${{ github.event.inputs.open_pr || 'true' }}"
+  SLACK_BOT_TOKEN: "${{ secrets.SLACK_BOT_TOKEN }}"
+  SLACK_CHANNEL: "${{ github.event.inputs.slack_channel || secrets.SLACK_CHANNEL }}"
+  HUD_SERVICES: "${{ github.event.inputs.services }}"
+
+runtimes:
+  node:
+    version: "22"
+
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v5
+    with:
+      fetch-depth: 0
+      persist-credentials: false
+
+
+---
+
 # Weekly Hud Report
 
 > Analyze production regressions, generate fixes, annotate contributors, and deliver a Slack report.
 
-## Required Environment Variables
-
-| Variable | Purpose |
-|---|---|
-| `PROMPT_DIR` | Path to the directory containing `deep-insights/` phase prompt files |
-| `INVESTIGATION_MODE` | `weekly` (default, week-over-week) or `audit` (absolute health check) |
-| `SLACK_BOT_TOKEN` | Slack app token with `chat:write` + `users:read.email` scopes |
-| `SLACK_CHANNEL` | Target Slack channel ID |
-| `HUD_SERVICES` | Comma-separated service names to scope analysis (empty = all) |
-| `ADDITIONAL_CONTEXT` | Free-text appended to analysis prompt (optional) |
-| `SELF_HEAL` | `true` (default) or `false` — whether to open a fix PR |
-
-## Phase Prompt Files
-
-This prompt references phase-specific instruction files via the `$PROMPT_DIR` environment variable. Your runner must set `PROMPT_DIR` to the directory containing the `deep-insights/` folder and make these files readable by the agent.
-
----
-
 ## Job Description
 
-You are an AI performance and reliability engineer.
+You are an AI performance and reliability engineer for `${{ github.repository }}`.
 Your task: generate a weekly deep-insights report analyzing production data, propose fixes for ongoing issues, annotate contributors, apply quality gates, optionally self-heal the most impactful issue, and deliver the report to Slack.
 
 **Parameters for this run:**
@@ -50,7 +132,7 @@ Execute the following phases **sequentially**. Each phase has a detailed prompt 
 
 4. If additional context was provided above, incorporate it into your analysis.
 
-5. Follow ALL instructions in the prompt file. Use the **hud** MCP server for all data queries (metrics, forensics, metadata).
+5. Follow ALL instructions in the prompt file. Use the **hud-mcp** MCP server for all data queries (metrics, forensics, metadata).
 
 6. Write your complete findings to `/tmp/analysis_findings.md`.
 
@@ -154,11 +236,11 @@ PY
 
 1. Read `$PROMPT_DIR/deep-insights/self-heal.txt` in its entirety.
 
-2. Follow the **scoring** and **fix selection** instructions.
+2. Follow the **scoring** and **fix selection** instructions (Phases 1-4 of self-heal.txt).
 
-3. If a fix qualifies (score >= 20), apply the code changes.
+3. If a fix qualifies (score >= 20), apply the code changes using the edit tool.
 
-4. Create a draft PR with the fix. The self-heal prompt has detailed instructions for branching, committing, and PR creation.
+4. **IMPORTANT — PR creation:** Do NOT follow the git branch/commit/push/PR instructions in self-heal.txt. Instead, the safe-outputs system will automatically create a draft PR from your file changes. Just make sure you've edited only the files that need fixing.
 
 5. If no fix qualifies, note "No suitable fix found" and continue to Phase 6.
 

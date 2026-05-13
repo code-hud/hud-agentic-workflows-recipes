@@ -1,0 +1,35 @@
+name: Hud Agent (Codex)
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_prompt:
+        description: 'Task prompt for the agent (or leave blank to use the file at .github/actions/hud-codex/prompt.txt)'
+        required: false
+        type: string
+  # Uncomment one of these triggers to run automatically:
+  #
+  # pull_request_target:
+  #   branches: [main]
+  #
+  # schedule:
+  #   - cron: '0 14 * * MON'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/hud-codex
+        with:
+          hud-mcp-key: ${{ secrets.HUD_MCP_KEY }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          task-prompt: ${{ github.event.inputs.task_prompt }}
+          # model: 'o4-mini'

@@ -1,0 +1,352 @@
+name: 'Hud Blast Radius Analysis'
+description: 'Analyze PR blast radius in production using Hud MCP + GitHub diff'
+author: 'Hud Team'
+
+inputs:
+  anthropic-api-key:
+    description: 'Anthropic API key for Claude Code CLI'
+    required: true
+
+  lookback-days:
+    description: 'Lookback window in days for metrics'
+    required: false
+    default: '7'
+
+  max-functions:
+    description: 'Maximum functions to include'
+    required: false
+    default: '80'
+
+  max-endpoints:
+    description: 'Maximum endpoints to include'
+    required: false
+    default: '80'
+
+  max-services:
+    description: 'Maximum services to include'
+    required: false
+    default: '3'
+
+  weight-absolute-invocations:
+    description: 'Score weight: absolute invocations'
+    required: false
+    default: '0.20'
+
+  weight-traffic-percentage:
+    description: 'Score weight: % of service traffic'
+    required: false
+    default: '0.15'
+
+  weight-latency-sensitivity:
+    description: 'Score weight: latency sensitivity (inverse)'
+    required: false
+    default: '0.15'
+
+  weight-duration-variability:
+    description: 'Score weight: duration variability (stddev)'
+    required: false
+    default: '0.10'
+
+  weight-endpoint-count:
+    description: 'Score weight: distinct endpoint count'
+    required: false
+    default: '0.10'
+
+  weight-stability:
+    description: 'Score weight: stability score (small)'
+    required: false
+    default: '0.05'
+
+  weight-code-change-risk:
+    description: 'Score weight: code change risk (AI assessment)'
+    required: false
+    default: '0.25'
+
+  hud-mcp-key:
+    description: 'Hud MCP key (from Hud dashboard, stored as a repo secret)'
+    required: true
+
+  model:
+    description: 'Model alias for the Claude CLI (sonnet, opus, haiku, or full Bedrock model ID)'
+    required: false
+    default: 'opus'
+
+  comment-on-pr:
+    description: 'If true, posts the report as a PR comment'
+    required: false
+    default: 'true'
+
+outputs:
+  report-path:
+    description: 'Path to the saved report markdown'
+    value: ${{ steps.run-analysis.outputs.report-path }}
+  blast-radius-score:
+    description: 'Blast radius score (0-100) extracted from RESULT_JSON'
+    value: ${{ steps.run-analysis.outputs.blast-radius-score }}
+  no-hud-functions:
+    description: 'true if zero Hud-tracked functions were found in the PR diff'
+    value: ${{ steps.run-analysis.outputs.no-hud-functions }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Resolve PR number
+      id: resolve-pr
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Try to get PR number from github event
+        PR_NUMBER="${{ github.event.pull_request.number }}"
+        
+        # Fallback to workflow inputs if available (for manual dispatch)
+        if [ -z "${PR_NUMBER}" ] || [ "${PR_NUMBER}" = "null" ]; then
+          PR_NUMBER="${{ github.event.inputs.pr_number }}"
+        fi
+
+        if [ -z "${PR_NUMBER}" ] || [ "${PR_NUMBER}" = "null" ]; then
+          echo "❌ Could not resolve PR number. Run on pull_request or provide pr_number input."
+          exit 1
+        fi
+
+        echo "pr-number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Setup MCP config
+      id: hud-config
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        MCP_CONFIG_PATH="$(pwd)/.mcp.json"
+        cat > "$MCP_CONFIG_PATH" <<EOF
+        {
+          "mcpServers": {
+            "hud": {
+              "command": "npx",
+              "args": ["-y", "hud-mcp@v2"],
+              "env": {
+                "HUD_MCP_KEY": "${{ inputs.hud-mcp-key }}"
+              }
+            }
+          }
+        }
+        EOF
+
+        echo "mcp-config-path=${MCP_CONFIG_PATH}" >> "$GITHUB_OUTPUT"
+
+    - name: Install Claude Code CLI
+      shell: bash
+      run: |
+        set -euo pipefail
+        curl -fsSL https://claude.ai/install.sh | bash
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        claude --version
+
+    - name: Collect PR diff
+      id: pr-diff
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+
+        REPO="${{ github.repository }}"
+        PR_NUMBER="${{ steps.resolve-pr.outputs.pr-number }}"
+
+        gh pr view "${PR_NUMBER}" --repo "${REPO}" --json title,number,headRefName,baseRefName > /tmp/pr.json
+
+        # gh pr diff can fail with HTTP 406 when the diff exceeds GitHub's
+        # 20 000-line limit.  Fall back to git diff + API file list.
+        DIFF_OK=true
+        gh pr diff "${PR_NUMBER}" --repo "${REPO}" --name-only > /tmp/pr-files.txt || DIFF_OK=false
+
+        if [ "${DIFF_OK}" = "true" ]; then
+          gh pr diff "${PR_NUMBER}" --repo "${REPO}" --color=never > /tmp/pr.diff || DIFF_OK=false
+        fi
+
+        if [ "${DIFF_OK}" = "false" ]; then
+          echo "⚠️  gh pr diff failed (likely too large) — falling back to git diff"
+
+          # File list via REST API (paginated, no 406 risk)
+          gh api --paginate "/repos/${REPO}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename' > /tmp/pr-files.txt
+
+          # Diff via git: fetch PR head and diff against checked-out base
+          HEAD_REF="$(jq -r '.headRefName' /tmp/pr.json)"
+          git fetch --depth=1 origin "${HEAD_REF}"
+          git diff HEAD FETCH_HEAD > /tmp/pr.diff || true
+        fi
+
+        # Cap diff size to avoid model overflows (keep tail too)
+        python3 - <<'PY'
+        import os
+
+        path = "/tmp/pr.diff"
+        cap = 350_000  # bytes
+        if not os.path.exists(path):
+          raise SystemExit("missing /tmp/pr.diff")
+
+        data = open(path, "rb").read()
+        if len(data) <= cap:
+          raise SystemExit(0)
+
+        head = data[:250_000]
+        tail = data[-100_000:]
+        out = head + b"\n\n... [diff truncated] ...\n\n" + tail
+        open(path, "wb").write(out)
+        PY
+
+        echo "pr-json=/tmp/pr.json" >> "$GITHUB_OUTPUT"
+        echo "files=/tmp/pr-files.txt" >> "$GITHUB_OUTPUT"
+        echo "diff=/tmp/pr.diff" >> "$GITHUB_OUTPUT"
+
+    - name: Run blast radius analysis
+      id: run-analysis
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+      run: |
+        set -euo pipefail
+
+        PROMPT_PATH="${GITHUB_ACTION_PATH}/blast-radius-prompt.txt"
+        if [ ! -f "${PROMPT_PATH}" ]; then
+          echo "❌ Prompt not found at ${PROMPT_PATH}"
+          exit 1
+        fi
+
+        CONFIG_JSON="$(jq -n \
+          --arg lookbackDays "${{ inputs.lookback-days }}" \
+          --arg maxFunctions "${{ inputs.max-functions }}" \
+          --arg maxEndpoints "${{ inputs.max-endpoints }}" \
+          --arg maxServices "${{ inputs.max-services }}" \
+          --arg wAbs "${{ inputs.weight-absolute-invocations }}" \
+          --arg wPct "${{ inputs.weight-traffic-percentage }}" \
+          --arg wLat "${{ inputs.weight-latency-sensitivity }}" \
+          --arg wVar "${{ inputs.weight-duration-variability }}" \
+          --arg wCnt "${{ inputs.weight-endpoint-count }}" \
+          --arg wStb "${{ inputs.weight-stability }}" \
+          --arg wCcr "${{ inputs.weight-code-change-risk }}" \
+          '{
+            lookbackDays: ($lookbackDays|tonumber),
+            maxFunctions: ($maxFunctions|tonumber),
+            maxEndpoints: ($maxEndpoints|tonumber),
+            maxServices: ($maxServices|tonumber),
+            weights: {
+              absoluteInvocations: ($wAbs|tonumber),
+              trafficPercentage: ($wPct|tonumber),
+              latencySensitivity: ($wLat|tonumber),
+              durationVariability: ($wVar|tonumber),
+              endpointCount: ($wCnt|tonumber),
+              stability: ($wStb|tonumber),
+              codeChangeRisk: ($wCcr|tonumber)
+            }
+          }')"
+
+        {
+          echo "## Inputs"
+          echo ""
+          echo "- Repo: ${{ github.repository }}"
+          echo "- PR: ${{ steps.resolve-pr.outputs.pr-number }}"
+          echo "- Config: ${CONFIG_JSON}"
+          echo ""
+          echo "## Changed files"
+          echo ""
+          sed 's/^/- /' "${{ steps.pr-diff.outputs.files }}"
+          echo ""
+          echo "## PR metadata"
+          echo ""
+          cat "${{ steps.pr-diff.outputs.pr-json }}"
+          echo ""
+          echo "## Diff"
+          echo ""
+          cat "${{ steps.pr-diff.outputs.diff }}"
+        } > /tmp/blast-radius-input.md
+
+        REPORT_PATH="/tmp/blast-radius-report.md"
+
+        # Feed both prompt + input as a single stream.
+        # Allow claude CLI to fail (e.g. API overloaded) without aborting the step.
+        CLAUDE_EXIT=0
+        cat "${PROMPT_PATH}" /tmp/blast-radius-input.md | claude \
+          --model "${{ inputs.model }}" \
+          --mcp-config "${{ steps.hud-config.outputs.mcp-config-path }}" \
+          2>&1 | tee "${REPORT_PATH}" || CLAUDE_EXIT=$?
+
+        if [ "${CLAUDE_EXIT}" -ne 0 ]; then
+          echo "⚠️ Claude CLI exited with code ${CLAUDE_EXIT} — treating as non-fatal"
+          echo "Claude API error (exit code ${CLAUDE_EXIT})" > "${REPORT_PATH}"
+        fi
+
+        # Extract blastRadiusScore and noHudFunctions from RESULT_JSON (best-effort)
+        eval "$(python3 - <<'PY'
+        import re, json, sys
+
+        text = open("/tmp/blast-radius-report.md", "r", encoding="utf-8", errors="ignore").read()
+        m = re.search(r"<RESULT_JSON>\s*(\{[\s\S]*?\})\s*</RESULT_JSON>", text)
+        if not m:
+          # No structured result found - assume no Hud functions (safe default: skip comment)
+          print("SCORE=")
+          print("NO_HUD_FUNCTIONS=true")
+          sys.exit(0)
+        try:
+          obj = json.loads(m.group(1))
+          score = obj.get("blastRadiusScore")
+          no_hud = obj.get("noHudFunctions", False)
+          print(f"SCORE={'' if score is None else str(score)}")
+          print(f"NO_HUD_FUNCTIONS={'true' if no_hud else 'false'}")
+        except Exception:
+          print("SCORE=")
+          print("NO_HUD_FUNCTIONS=true")
+        PY
+        )"
+
+        # Strip conversational filler before the report and the <RESULT_JSON> block
+        python3 - <<'PY'
+        import re
+        path = '/tmp/blast-radius-report.md'
+        text = open(path, 'r', encoding='utf-8', errors='ignore').read()
+
+        # Remove any text before the first markdown heading (e.g. "Now I have all the data...")
+        heading_match = re.search(r'^#{1,3}\s', text, re.MULTILINE)
+        if heading_match:
+            text = text[heading_match.start():]
+
+        # Remove <RESULT_JSON> block
+        text = re.sub(r'\s*<RESULT_JSON>[\s\S]*?</RESULT_JSON>\s*', '\n', text).rstrip()
+        open(path, 'w', encoding='utf-8').write(text)
+        PY
+
+        echo "report-path=${REPORT_PATH}" >> "$GITHUB_OUTPUT"
+        echo "blast-radius-score=${SCORE}" >> "$GITHUB_OUTPUT"
+        echo "no-hud-functions=${NO_HUD_FUNCTIONS}" >> "$GITHUB_OUTPUT"
+
+        {
+          echo "## Hud Blast Radius Report"
+          echo ""
+          echo "**PR:** #${{ steps.resolve-pr.outputs.pr-number }}  "
+          if [ -n "${SCORE}" ]; then
+            echo "**Blast radius score:** ${SCORE}/100"
+          else
+            echo "**Blast radius score:** (not parsed)"
+          fi
+          echo ""
+          echo "### Report"
+          echo ""
+          cat "${REPORT_PATH}"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Comment on PR
+      if: ${{ inputs.comment-on-pr == 'true' && steps.run-analysis.outputs.no-hud-functions != 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        REPO="${{ github.repository }}"
+        PR_NUMBER="${{ steps.resolve-pr.outputs.pr-number }}"
+        gh pr comment "${PR_NUMBER}" --repo "${REPO}" --body-file "${{ steps.run-analysis.outputs.report-path }}"

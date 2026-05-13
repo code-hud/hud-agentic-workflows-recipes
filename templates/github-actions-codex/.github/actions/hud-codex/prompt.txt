@@ -1,0 +1,11 @@
+You have access to the **hud** MCP server for querying Hud production runtime data, plus standard tools (bash, file edit, github CLI).
+
+Replace this prompt with your actual task. Examples:
+
+- Find functions with zero invocations in the last 60 days and open a draft PR removing them.
+- Summarize the top 5 endpoints by error rate over the last 7 days. Output as markdown.
+- Compare the current deployment's health to the previous version and recommend rollback / investigate / clean.
+
+Reference the examples/ folder in the parent repo for working patterns.
+
+When you finish, print a short summary of what you did and any next steps.

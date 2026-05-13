@@ -8,7 +8,7 @@ Discover team-to-services mapping at runtime by reading the `author` field of ea
 |---|---|
 | `discover.py` | Walks `apps/*/package.json`, extracts `author`, groups services by team, writes JSON output |
 
-This is the same pattern used in [`examples/weekly-report/gh-aw/`](../../../examples/weekly-report/gh-aw/) Phase 0, factored out as a standalone script.
+This is the same pattern used in [`examples/weekly-report-gh-aw/`](../../../examples/weekly-report-gh-aw/) Phase 0, factored out as a standalone script.
 
 ## How to use
 
@@ -62,7 +62,7 @@ The script writes JSON to `/tmp/team_services.json` (configurable via `--out`):
 | `HUD_TEAMS` | Comma-separated team keys to include |
 | `HUD_SERVICES` | Comma-separated service names to include (filter within each team) |
 
-These slot into the workflow inputs already in [`examples/weekly-report/gh-aw/`](../../../examples/weekly-report/gh-aw/).
+These slot into the workflow inputs already in [`examples/weekly-report-gh-aw/`](../../../examples/weekly-report-gh-aw/).
 
 ### 4. Different repo layout
 
