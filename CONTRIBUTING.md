@@ -4,7 +4,7 @@ Thanks for contributing. Every leaf folder should make sense on its own, even wh
 
 ## Adding a new example
 
-1. Pick a use case. If it's new, create `examples/<use-case-slug>/`. If it's a new runner variant of an existing use case, add it under the existing folder.
+1. Pick a use case. If it's new, create `full-examples/<use-case-slug>/`. If it's a new runner variant of an existing use case, add it under the existing folder.
 2. Inside the use-case folder, create a sub-folder per runner: `github-actions/`, `gh-aw/`, `cursor/`, or `claude-routine/`.
 3. Drop the workflow files in. For most runners this is a single workflow file + prompt + a `README.md`.
 4. Write a `README.md` at the runner-folder level. It **must** include a standardized `## How to install` table at the top:
@@ -25,11 +25,11 @@ Thanks for contributing. Every leaf folder should make sense on its own, even wh
 
 ## Adding a new template
 
-Templates are blank skeletons (Hud + a runner, no task). Add under `templates/<runner>/`. Include a `README.md` with the same `## How to install` table format. For Cursor templates, ship an `AGENTS.md` (copyable to repo root); for other runners, ship the actual config files at their target paths.
+Templates are blank skeletons (Hud + a runner, no task). Add under `runner-templates/<runner>/`. Include a `README.md` with the same `## How to install` table format. For Cursor templates, ship an `AGENTS.md` (copyable to repo root); for other runners, ship the actual config files at their target paths.
 
 ## Adding a new recipe
 
-Recipes are cross-cutting patterns (e.g. team-splitting strategies, secret rotation, monorepo path detection). They plug into multiple examples without being workflows themselves. Add under `recipes/<pattern-name>/`.
+Recipes are cross-cutting patterns (e.g. team-splitting strategies, secret rotation, monorepo path detection). They plug into multiple examples without being workflows themselves. Add under `task-recipes/<pattern-name>/`.
 
 ## Style
 
@@ -41,9 +41,9 @@ Recipes are cross-cutting patterns (e.g. team-splitting strategies, secret rotat
 ## What goes where (decision tree)
 
 ```
-Is it a workflow that runs end-to-end on its own?            → examples/<use-case>/<runner>/
-Is it a blank skeleton with no task content?                 → templates/<runner>/
-Is it a pattern shared by multiple workflows?                → recipes/<pattern>/
+Is it a workflow that runs end-to-end on its own?            → full-examples/<use-case>/<runner>/
+Is it a blank skeleton with no task content?                 → runner-templates/<runner>/
+Is it a pattern shared by multiple workflows?                → task-recipes/<pattern>/
 Is it a doc that doesn't sit beside code?                    → docs/
 ```
 
