@@ -1,6 +1,8 @@
 # Hud Agentic Workflows: Recipes
 
-Production agentic workflows powered by [Hud](https://hud.io) runtime data. Pick a use case, pick a runner, copy the files.
+Production agentic workflows powered by [Hud](https://hud.io) runtime data. A coding agent runs a defined task automatically — on a PR, a deploy, or a schedule — grounded in your real production metrics instead of source and diffs alone.
+
+**New to agentic workflows?** See the [concept guide in the Hud docs](https://docs.hud.io/docs/agentic-workflows). This repo is the hands-on version: pick a use case, pick a runner, copy the files.
 
 ## The matrix
 
